@@ -1,0 +1,182 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/archivo';
+@import '@fontsource-variable/public-sans';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+
+/*
+  Tokens del sistema de diseno de Educa.
+  El registro visual viene del libro de calificaciones: papel reglado,
+  tinta negra, correccion en rojo. Cada color significa algo.
+
+  Los colores de marca (pizarra) se redefinen en tiempo de ejecucion
+  por institucion, por eso son variables y no valores fijos en los componentes.
+*/
+@theme {
+  --color-lienzo: #f5f6f4;
+  --color-superficie: #ffffff;
+  --color-regla: #d8dcd8;
+  --color-regla-fuerte: #b6beb8;
+
+  --color-tinta: #14171a;
+  --color-tinta-media: #5a6470;
+  --color-tinta-suave: #8b9299;
+
+  --color-pizarra: #1e5245;
+  --color-pizarra-fondo: #12302a;
+  --color-pizarra-vivo: #5fb79a;
+  --color-pizarra-tenue: #e7efeb;
+
+  --color-correccion: #a8352e;
+  --color-correccion-tenue: #faedec;
+  --color-aviso: #92610a;
+  --color-aviso-tenue: #fbf3e4;
+
+  --font-display: 'Archivo Variable', system-ui, sans-serif;
+  --font-sans: 'Public Sans Variable', system-ui, sans-serif;
+  --font-dato: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Formas rectas: aunque alguien escriba rounded-2xl, no se redondea. */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-lienzo);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: var(--color-pizarra);
+    color: #ffffff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-pizarra);
+    outline-offset: 2px;
+  }
+
+  /* Todo numero que sea un dato se escribe en monoespaciada. */
+  th,
+  time,
+  code {
+    font-family: var(--font-dato);
+  }
+
+  th {
+    text-align: left;
+  }
+}
+
+@layer components {
+  /* Renglones del libro de calificaciones, para paneles oscuros. */
+  .reglado {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 43px,
+      rgba(255, 255, 255, 0.06) 43px,
+      rgba(255, 255, 255, 0.06) 44px
+    );
+  }
+
+  .etiqueta-dato {
+    font-family: var(--font-dato);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .publico-boton {
+    transition: transform 180ms ease, background-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .publico-boton:hover {
+    transform: translateY(-2px);
+    background-color: var(--color-pizarra-fondo);
+    box-shadow: 0 7px 0 rgba(18, 48, 42, 0.14);
+  }
+
+  .hero-entrada {
+    animation: entrada-publica 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .hero-producto {
+    animation: entrada-producto 850ms 120ms cubic-bezier(0.16, 1, 0.3, 1)
+      both;
+  }
+
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-reveal].revelado {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .grupo-fila {
+    transition: transform 220ms ease, background-color 220ms ease;
+  }
+
+  .grupo-fila:hover {
+    transform: translateX(5px);
+  }
+
+  @keyframes entrada-publica {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes entrada-producto {
+    from {
+      opacity: 0;
+      transform: translateX(30px) rotate(1deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) rotate(0);
+    }
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-entrada,
+  .hero-producto,
+  [data-reveal] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .publico-boton,
+  .grupo-fila {
+    transition: none;
+  }
+}
