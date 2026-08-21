@@ -11,6 +11,9 @@ coverage/
 .env.*
 !.env.example
 
+# Vercel
+.vercel/
+
 # Logs
 *.log
 npm-debug.log*

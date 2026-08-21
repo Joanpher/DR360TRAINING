@@ -35,8 +35,18 @@ export class BaseDatos implements OnModuleDestroy {
         ssl: url.includes('localhost') || url.includes('127.0.0.1')
           ? false
           : { rejectUnauthorized: false },
-        max: 10,
+        /*
+          En Vercel cada instancia de la funcion abre su propio pool y varias
+          instancias conviven bajo carga. Con dos pools por instancia, diez
+          conexiones cada uno se comen el cupo de RDS —que ademas comparte con
+          otros proyectos— en cuanto llegan unos pocos usuarios. Cinco deja
+          margen, y PG_POOL_MAX lo ajusta sin tocar codigo.
+        */
+        max: Number(config.get('PG_POOL_MAX') ?? 5),
         idleTimeoutMillis: 30_000,
+        // Sin esto, una peticion se queda colgada esperando a RDS hasta que
+        // la funcion agota su tiempo y el error no dice de que murio.
+        connectionTimeoutMillis: 10_000,
       });
     };
 
