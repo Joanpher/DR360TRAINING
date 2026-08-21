@@ -1,4 +1,4 @@
-# Despliegue: API en Render, web en Vercel
+| Web Vite | Vercel | `frontend/` | `vercel.json` (raiz)   |# Despliegue: API en Render, web en Vercel
 
 | Pieza    | Donde  | Raiz        | Configuracion          |
 | -------- | ------ | ----------- | ---------------------- |
