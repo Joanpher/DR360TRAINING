@@ -1,73 +1,107 @@
-# Despliegue en Vercel
+# Despliegue: API en Render, web en Vercel
 
-El repositorio se despliega como **un solo proyecto de Vercel con dos servicios**
-(`vercel.json` en la raiz):
+| Pieza    | Donde  | Raiz        | Configuracion          |
+| -------- | ------ | ----------- | ---------------------- |
+| API Nest | Render | `backend/`  | `render.yaml`          |
+| Web Vite | Vercel | `frontend/` | `frontend/vercel.json` |
 
-| Servicio   | Raiz        | Que es                          | Rutas publicas |
-| ---------- | ----------- | ------------------------------- | -------------- |
-| `frontend` | `frontend/` | React + Vite (estatico)         | todo lo demas  |
-| `backend`  | `backend/`  | NestJS (Vercel Function, Fluid) | `/api/*`       |
+## Por que Vercel hace de proxy y no se llama a Render directamente
 
-Los dos comparten dominio. Eso importa mas de lo que parece: la cookie de
-refresco es `httpOnly` + `SameSite=Strict`, y solo viaja limpia si la web y la
-API estan en el mismo origen. Por eso el frontend llama a `/api/...` en relativo
-y no hay ninguna URL de API que configurar.
+El frontend sigue llamando a `/api/...` en relativo. Vercel reenvia esas rutas a
+Render con un *rewrite*, asi que **el navegador solo ve un dominio**.
 
-El servicio recibe la ruta original: `/api/salud` le llega al backend como
-`/api/salud`, que es justo lo que espera el `setGlobalPrefix('api')` de Nest.
+No es un capricho: la sesion se sostiene con una cookie `httpOnly` +
+`SameSite=Strict`. Si la web llamara a `educa-api.onrender.com` desde
+`tu-app.vercel.app`, esa cookie seria de terceros y el navegador dejaria de
+mandarla —la sesion se caeria en cada refresco—. Arreglarlo por la otra via
+obliga a `SameSite=None`, a CORS con credenciales y a mantener una lista de
+origenes permitidos, que es mas superficie y mas cosas que se rompen. Con el
+proxy no hace falta nada de eso y el codigo del frontend no cambia.
+
+El precio es un salto extra de red por peticion. A cambio la API queda detras
+del dominio de Vercel.
 
 ---
 
-## 1. Variables de entorno en Vercel
+## 1. Desplegar la API en Render
 
-En el panel del proyecto → **Settings → Environment Variables**. Marcar
-Production y Preview (y Development si se va a usar `vercel dev`).
+1. Render → **New → Blueprint** → conectar `Joanpher/DR360TRAINING`.
+   Detecta `render.yaml` y crea el servicio `educa-api`.
+2. Rellenar las variables marcadas como `sync: false`:
 
-| Variable            | Obligatoria | Valor                                                       |
-| ------------------- | ----------- | ----------------------------------------------------------- |
-| `DATABASE_URL_APP`  | si          | `postgres://educa_app:CLAVE@HOST:5432/educa`                 |
-| `DATABASE_URL_AUTH` | si          | `postgres://educa_auth:CLAVE@HOST:5432/educa`                |
-| `JWT_SECRETO`       | si          | secreto largo y aleatorio (ver abajo)                        |
-| `JWT_MINUTOS`       | no          | `15` por defecto                                             |
-| `REFRESCO_DIAS`     | no          | `30` por defecto                                             |
-| `PG_POOL_MAX`       | no          | `5` por defecto                                              |
-| `ORIGEN_WEB`        | no          | solo si algun cliente externo consume la API                 |
+   | Variable            | Valor                                         |
+   | ------------------- | --------------------------------------------- |
+   | `DATABASE_URL_APP`  | `postgres://educa_app:CLAVE@HOST:5432/educa`  |
+   | `DATABASE_URL_AUTH` | `postgres://educa_auth:CLAVE@HOST:5432/educa` |
+   | `JWT_SECRETO`       | secreto largo y aleatorio                     |
+   | `ORIGEN_WEB`        | dejar vacia (ver mas abajo)                   |
 
-Generar el secreto:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
 
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-```
+   `PORT` lo inyecta Render (10000): no definirlo. `DATABASE_URL` —el usuario
+   maestro— tampoco: solo lo usa `db/migrar.mjs` desde tu maquina, y lo que no
+   esta subido no se puede filtrar.
 
-Dos cosas que **no** hay que poner:
+3. Ajustar `region` en `render.yaml` a la region de RDS si no es `virginia`.
+   Cada consulta cruza esa distancia.
+4. Anotar la URL que asigna Render, del estilo `https://educa-api.onrender.com`.
 
-- `PORT` — lo inyecta Vercel.
-- `DATABASE_URL` (el usuario maestro) — solo lo usa `db/migrar.mjs` desde tu
-  maquina. Si no esta en Vercel, no puede filtrarse desde ahi.
+### Acceso a RDS
 
-El frontend no necesita ninguna variable.
+La instancia tiene que aceptar conexiones desde Render: accesible
+publicamente y con el *security group* abierto. Render solo da IPs de salida
+fijas —para meterlas en la lista— a partir de los planes de pago.
 
-## 2. Acceso desde Vercel a RDS
-
-Las funciones salen a internet con IP variable, asi que la instancia de RDS
-tiene que ser accesible publicamente y su *security group* aceptar el trafico.
-Si abrir el grupo entero no es aceptable, la alternativa es
-[Secure Compute](https://vercel.com/docs/networking/secure-compute), que da IPs
-fijas para poner en la lista.
-
-Comprobacion rapida despues del primer despliegue:
+### Comprobacion
 
 ```
-GET https://TU-PROYECTO.vercel.app/api/salud
+GET https://educa-api.onrender.com/api/salud
 ```
 
 Debe responder `{"api":"ok","base":"ok",...}`. Si dice `"base":"sin conexion"`,
-el problema es la red o las credenciales de RDS, no el despliegue.
+el proceso vive pero no alcanza RDS: es red o credenciales, no despliegue.
 
-## 3. Migraciones
+### Sobre el plan free
 
-Vercel **no** ejecuta migraciones. Se aplican a mano contra RDS antes de
-publicar, con el usuario maestro:
+Se duerme a los 15 minutos sin trafico y la siguiente peticion tarda ~30-60
+segundos en despertarlo. Para enseñarle el sistema a alguien, conviene abrir
+`/api/salud` un minuto antes.
+
+## 2. Apuntar el frontend a esa URL
+
+En [`frontend/vercel.json`](frontend/vercel.json), cambiar el `destination` por
+la URL real de Render:
+
+```json
+{
+  "source": "/api/:ruta*",
+  "destination": "https://TU-SERVICIO.onrender.com/api/:ruta*"
+}
+```
+
+El `/api` se conserva en los dos lados porque Nest sirve todo bajo ese prefijo.
+
+Las respuestas de la API llevan datos de sesion, asi que la cabecera
+`x-vercel-enable-rewrite-caching: 0` corta cualquier cacheo en el CDN. Sin ella,
+Vercel respeta las cabeceras de cache de la API y una respuesta de un usuario
+podria acabar servida a otro.
+
+## 3. Desplegar la web en Vercel
+
+1. Vercel → **Add New → Project** → importar el repositorio.
+2. **Root Directory: `frontend`** (importante: ahi vive `vercel.json`).
+   Framework: Vite. El resto por defecto.
+3. **Deploy**. El frontend no necesita ninguna variable de entorno.
+
+La regla `"/(.*)" → "/index.html"` es el *fallback* del SPA. Se aplica solo
+cuando ningun fichero estatico coincide, asi que `/assets/*` no se ve afectado.
+
+## 4. Migraciones
+
+No las ejecuta ninguna de las dos plataformas. Se aplican a mano contra RDS con
+el usuario maestro, antes de publicar:
 
 ```bash
 cd backend
@@ -75,43 +109,25 @@ npm run db:estado    # que hay aplicado
 npm run db:migrar    # aplicar lo pendiente
 ```
 
-Recordar que `educa_app` y `educa_auth` se crean sin contrasena en la migracion
-0001; hay que asignarselas con el usuario maestro antes de que la API arranque.
+`educa_app` y `educa_auth` se crean sin contrasena en la migracion 0001: hay que
+asignarselas con el usuario maestro antes de que la API arranque.
 
-## 4. Importar el proyecto
+## 5. Verificar
 
-1. Vercel → **Add New → Project** → importar `Joanpher/DR360TRAINING`.
-2. Dejar el **Root Directory** en la raiz del repositorio (no elegir
-   `frontend/` ni `backend/`): los servicios los define `vercel.json`.
-3. Cargar las variables del paso 1.
-4. **Deploy**.
-
-Con la CLI seria lo mismo desde la raiz:
-
-```bash
-npx vercel        # preview
-npx vercel --prod # produccion
-```
-
-## 5. Verificar despues de desplegar
-
-- `/api/salud` → `api: ok`, `base: ok`.
-- La landing carga en `/`.
-- Entrar a `/admin/grados` y **recargar la pagina**: debe seguir funcionando.
-  Eso confirma que el *fallback* SPA del servicio `frontend` esta bien (la
-  regla `"/(.*)" → "/index.html"` dentro del servicio; se aplica solo cuando
-  no hay un fichero estatico que coincida, asi que `/assets/*` no se ve
-  afectado).
-- Iniciar sesion y recargar: si la sesion sobrevive, la cookie de refresco
+- `https://TU-APP.vercel.app/api/salud` → `api: ok`, `base: ok`. Que responda
+  **por el dominio de Vercel** es lo que confirma que el proxy funciona.
+- Entrar a `/admin/grados` y recargar: sigue en pie (fallback del SPA).
+- Iniciar sesion, recargar y ver que la sesion sobrevive: la cookie de refresco
   viaja bien.
 
 ## Notas
 
-- `NODE_ENV` vale `production` en Vercel por si solo, y de eso dependen el
+- `NODE_ENV=production` va fijado en `render.yaml`, y de el dependen el
   `secure: true` y el `SameSite=Strict` de la cookie de refresco.
-- La conexion a RDS usa `rejectUnauthorized: false` porque el certificado es de
-  la CA de AWS. Endurecerlo pasa por cargar el bundle de AWS y ponerlo en
-  `true`.
-- El pool va a 5 conexiones por defecto: hay dos pools por instancia de funcion
-  y varias instancias a la vez, y la instancia de RDS esta compartida con otros
-  proyectos.
+- `ORIGEN_WEB` solo entra en juego si alguien llama a la API sin pasar por el
+  proxy. A traves de Vercel el navegador ni siquiera manda `Origin`, asi que
+  CORS no interviene.
+- El pool va a 5 conexiones (`PG_POOL_MAX`) porque hay dos pools por instancia y
+  la instancia de RDS esta compartida con otros proyectos.
+- La conexion a RDS usa `rejectUnauthorized: false` por el certificado de la CA
+  de AWS. Endurecerlo pasa por cargar el bundle de AWS y ponerlo en `true`.

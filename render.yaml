@@ -1,0 +1,43 @@
+# Blueprint de Render para la API. El frontend no vive aqui: se despliega en
+# Vercel, que reenvia /api a este servicio (ver DESPLIEGUE.md).
+services:
+  - name: educa-api
+    type: web
+    runtime: node
+    plan: free
+    # Poner la misma region que la instancia de RDS. Cada consulta cruza esta
+    # distancia, y con una base en otro continente se nota en cada peticion.
+    region: virginia
+    rootDir: backend
+    branch: main
+    # npm install y no npm ci: el lock se genera en Windows y ahi no se instala
+    # el binding wasm de unrs-resolver (via jest-resolve), asi que sus peers
+    # @emnapi/* nunca quedan anotados. En Linux npm ci los exige y aborta.
+    # --include=dev porque NODE_ENV=production hace que npm omita las
+    # devDependencies, y el CLI de Nest que compila el proyecto esta ahi.
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm run start:prod
+    # Devuelve 200 aunque la base no conteste, asi que sirve para saber si el
+    # proceso vive sin que un corte de RDS provoque un reinicio en bucle.
+    healthCheckPath: /api/salud
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # sync: false = el valor se pone a mano en el panel y no se versiona.
+      - key: DATABASE_URL_APP
+        sync: false
+      - key: DATABASE_URL_AUTH
+        sync: false
+      - key: JWT_SECRETO
+        sync: false
+      - key: JWT_MINUTOS
+        value: 15
+      - key: REFRESCO_DIAS
+        value: 30
+      - key: PG_POOL_MAX
+        value: 5
+      # Solo hace falta si algun cliente llama a la API directamente, saltandose
+      # el proxy de Vercel. A traves del proxy el navegador nunca manda Origin.
+      - key: ORIGEN_WEB
+        sync: false
