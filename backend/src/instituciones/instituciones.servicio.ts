@@ -627,7 +627,7 @@ export class InstitucionesServicio {
       .update(`dominio:${institucionId}:${dominio}`)
       .digest('base64url')
       .slice(0, 32);
-    return `educa-verificacion=${firma}`;
+    return `dr360training-verificacion=${firma}`;
   }
 
   private escalaDe(fila: FilaInstitucion): Tramo[] {

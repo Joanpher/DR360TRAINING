@@ -100,7 +100,7 @@ export function Institucion() {
     <div className="space-y-6">
       <EncabezadoPagina
         titulo="Datos y marca"
-        descripcion="Cómo se llama la institución, cómo se ve dentro de Educa y quién puede entrar con su correo."
+        descripcion="Cómo se llama la institución, cómo se ve dentro de DR360TRAINING y quién puede entrar con su correo."
       />
 
       <DatosGenerales institucion={datos.institucion} alGuardar={fijar} />
@@ -471,7 +471,7 @@ function DialogoDominio({
             onChange={(e) => setRol(e.target.value)}
             opciones={[
               { valor: 'estudiante', texto: 'Estudiante' },
-              { valor: 'docente', texto: 'Docente' },
+              { valor: 'docente', texto: 'Instructor' },
               { valor: 'invitado', texto: 'Invitado (solo lectura)' },
             ]}
           />

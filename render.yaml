@@ -1,7 +1,7 @@
 # Blueprint de Render para la API. El frontend no vive aqui: se despliega en
 # Vercel, que reenvia /api a este servicio (ver DESPLIEGUE.md).
 services:
-  - name: educa-api
+  - name: dr360training-api
     type: web
     runtime: node
     plan: free

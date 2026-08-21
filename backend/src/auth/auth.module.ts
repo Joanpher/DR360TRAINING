@@ -13,7 +13,7 @@ import { AuthServicio } from './auth.servicio';
         secret: config.getOrThrow<string>('JWT_SECRETO'),
         signOptions: {
           expiresIn: `${config.get('JWT_MINUTOS') ?? 15}m`,
-          issuer: 'educa',
+          issuer: 'dr360training',
         },
       }),
     }),

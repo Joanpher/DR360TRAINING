@@ -52,7 +52,7 @@ export const nombreRolInstitucional: Record<RolInstitucional, string> = {
   propietario: 'Propietario',
   administrador: 'Administrador',
   coordinador: 'Coordinador',
-  docente: 'Docente',
+  docente: 'Instructor',
   estudiante: 'Estudiante',
   invitado: 'Invitado',
 }

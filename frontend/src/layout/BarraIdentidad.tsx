@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, Building2, ChevronDown, LogOut, Search, UserRound } from 'lucide-react'
 import { Marca } from '../ui/Marca'
-import { nombreRol, useRol } from '../app/rol'
+import { nombreRol, useVista } from '../app/rol'
+import { SelectorVista } from './SelectorVista'
 import { iniciales, useSesion } from '../app/sesion'
 
 /*
@@ -14,7 +15,10 @@ import { iniciales, useSesion } from '../app/sesion'
   fijas junto a la marca y no escondidas en un menú.
 
   El rol que aparece bajo el nombre se lee, no se elige: es el que trae la
-  membresía de esta institución y el que decide en qué panel se está.
+  membresía de esta institución y el que decide en qué panel se está. Lo que
+  sí se elige -y solo si eres administrador- es a qué panel te asomas, con el
+  selector de al lado; mientras dure, ahí abajo verás el rol que estás mirando
+  y no el tuyo, que es justo lo que se está comprobando.
 */
 export function BarraIdentidad({
   inicio = '/inicio',
@@ -23,7 +27,7 @@ export function BarraIdentidad({
   inicio?: string
   buscar?: string
 }) {
-  const { rol } = useRol()
+  const { rol } = useVista()
   const { usuario, institucion, instituciones, salir } = useSesion()
   const [menu, setMenu] = useState(false)
   const contenedor = useRef<HTMLDivElement>(null)
@@ -56,11 +60,7 @@ export function BarraIdentidad({
           {institucion?.siglas ?? institucion?.nombre ?? '—'}
         </span>
 
-        {rol === 'admin' && (
-          <span className="etiqueta-dato hidden border border-pizarra-vivo/40 px-1.5 py-0.5 text-pizarra-vivo sm:inline-block">
-            Administración
-          </span>
-        )}
+        <SelectorVista />
 
         <div className="relative ml-4 hidden max-w-md flex-1 md:block">
           <Search

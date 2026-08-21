@@ -579,7 +579,7 @@ export const puestaEnMarcha = [
   { paso: 'Definir unidades académicas', hecho: true, ruta: '/admin/unidades' },
   { paso: 'Registrar programas', hecho: true, ruta: '/admin/programas' },
   { paso: 'Abrir el periodo académico', hecho: true, ruta: '/admin/periodos' },
-  { paso: 'Invitar al equipo docente', hecho: true, ruta: '/admin/personas' },
+  { paso: 'Invitar a los instructores', hecho: true, ruta: '/admin/personas' },
   { paso: 'Publicar los cursos del periodo', hecho: false, ruta: '/admin/cursos' },
   { paso: 'Verificar el dominio de correo', hecho: false, ruta: '/admin/institucion' },
   { paso: 'Definir la escala de calificación', hecho: false, ruta: '/admin/institucion' },

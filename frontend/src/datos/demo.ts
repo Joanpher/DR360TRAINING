@@ -15,9 +15,9 @@ export type Curso = {
 }
 
 export const institucion = {
-  codigo: 'uce',
-  nombre: 'Universidad Central del Este',
-  siglas: 'UCE',
+  codigo: 'itc',
+  nombre: 'Instituto Tecnico del Caribe',
+  siglas: 'ITC',
   periodo: '2026-2',
 }
 
@@ -276,7 +276,7 @@ export const sesiones = [
   Esta tabla existe para ver esa regla funcionando en pantalla.
 */
 export const escala = {
-  nombre: 'Escala literal UCE',
+  nombre: 'Escala literal ITC',
   tipo: 'literal',
   bandas: [
     { etiqueta: 'A', desde: 90, hasta: 100, indice: 4.0 },

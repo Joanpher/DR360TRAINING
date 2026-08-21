@@ -37,7 +37,7 @@ const ZONAS_POR_PAIS: Record<string, string> = {
   US: 'America/New_York',
 }
 
-/* uce.educa.do sale del nombre, pero se puede corregir: después es permanente. */
+/* itc.dr360training.com sale del nombre, pero se puede corregir: después es permanente. */
 function slugDesde(nombre: string): string {
   return nombre
     .normalize('NFD')
@@ -122,7 +122,7 @@ export function Onboarding() {
       case 'tomado':
         return { texto: 'Ese identificador ya está tomado.', malo: true }
       case 'libre':
-        return { texto: `Disponible · ${slugEfectivo}.educa.do`, malo: false }
+        return { texto: `Disponible · ${slugEfectivo}.dr360training.com`, malo: false }
       case 'comprobando':
         return { texto: 'Comprobando…', malo: false }
       default:
@@ -188,7 +188,7 @@ export function Onboarding() {
           icono={Building2}
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          placeholder="Universidad Central del Este"
+          placeholder="Instituto Tecnico del Caribe"
           required
           autoFocus
         />
@@ -228,7 +228,7 @@ export function Onboarding() {
               setSiglasTocadas(true)
               setSiglas(e.target.value.toUpperCase())
             }}
-            placeholder="UCE"
+            placeholder="ITC"
             maxLength={12}
             required
           />

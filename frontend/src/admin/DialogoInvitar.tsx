@@ -29,7 +29,7 @@ export function DialogoInvitar({
       abierto={abierto}
       alCerrar={alCerrar}
       titulo="Invitar a la institución"
-      descripcion="La persona recibirá un correo con un enlace válido por 7 días. Si ya tiene cuenta en Educa solo tendrá que aceptar; si no, la creará al aceptar."
+      descripcion="La persona recibirá un correo con un enlace válido por 7 días. Si ya tiene cuenta en DR360TRAINING solo tendrá que aceptar; si no, la creará al aceptar."
       pie={
         <>
           <Boton variante="fantasma" onClick={alCerrar}>
@@ -56,7 +56,7 @@ export function DialogoInvitar({
           onChange={(e) => setRol(e.target.value)}
           opciones={[
             { valor: 'estudiante', texto: 'Estudiante' },
-            { valor: 'docente', texto: 'Docente' },
+            { valor: 'docente', texto: 'Instructor' },
             { valor: 'coordinador', texto: 'Coordinador' },
             { valor: 'administrador', texto: 'Administrador' },
             { valor: 'invitado', texto: 'Invitado (solo lectura)' },

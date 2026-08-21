@@ -141,7 +141,7 @@ export function Secciones() {
             {sinDocente > 0 && (
               <Nota tono="aviso">
                 Hay {sinDocente} {sinDocente === 1 ? 'curso' : 'cursos'} sin docente
-                asignado. Un curso sin docente no se puede publicar, así que nadie podrá
+                asignado. Un curso sin instructor no se puede publicar, así que nadie podrá
                 dar clase ni calificar en él.
               </Nota>
             )}
@@ -429,7 +429,7 @@ function FilaCurso({
         value={curso.docenteMembresiaId ?? ''}
         disabled={bloqueada}
         onChange={(e) => void alCambiar({ docenteMembresiaId: e.target.value || null })}
-        aria-label={`Docente de ${curso.asignatura}`}
+        aria-label={`Instructor de ${curso.asignatura}`}
         className={cn(
           'h-8 w-56 rounded-sm border bg-superficie px-2 text-[13px] focus:border-pizarra focus:outline-none disabled:opacity-50',
           curso.docenteMembresiaId
@@ -437,7 +437,7 @@ function FilaCurso({
             : 'border-aviso/40 text-aviso',
         )}
       >
-        <option value="">Sin docente</option>
+        <option value="">Sin instructor</option>
         {docentes.map((o) => (
           <option key={o.valor} value={o.valor}>
             {o.texto}
@@ -458,7 +458,7 @@ function FilaCurso({
           title={
             curso.docenteMembresiaId
               ? undefined
-              : 'Asigna un docente antes de publicar el curso'
+              : 'Asigna un instructor antes de publicar el curso'
           }
         >
           Publicar

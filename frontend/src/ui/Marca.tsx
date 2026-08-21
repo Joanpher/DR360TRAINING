@@ -1,8 +1,12 @@
 import { cn } from './cn'
 
 /*
-  Marca provisional de Educa: un libro reglado.
+  Marca provisional de DR360TRAINING: un libro reglado.
   Cuando exista el logo real se sustituye solo este componente.
+
+  El nombre va en dos pesos y no en uno: DR360 es lo que la gente dice en voz
+  alta, TRAINING es la coletilla. Con trece letras del mismo peso el ojo no
+  sabe donde agarrarse.
 */
 export function Marca({
   tono = 'claro',
@@ -35,7 +39,7 @@ export function Marca({
         className="font-display text-[17px] font-bold tracking-[-0.02em]"
         style={{ color }}
       >
-        Educa
+        DR360<span className="font-medium opacity-65">TRAINING</span>
       </span>
     </span>
   )

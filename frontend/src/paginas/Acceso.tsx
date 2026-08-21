@@ -35,11 +35,11 @@ export function Acceso() {
   return (
     <MarcoAcceso
       entrada="Iniciar sesión"
-      titulo="Entra a Educa"
+      titulo="Entra a DR360TRAINING"
       descripcion="Si trabajas en la institución, entra con tu correo. Si eres estudiante, con la matrícula que te dio el colegio."
       pie={
         <p className="text-[13px] leading-relaxed text-tinta-media">
-          ¿Vas a montar tu institución en Educa?{' '}
+          ¿Vas a montar tu institución en DR360TRAINING?{' '}
           <Link
             to="/crear-cuenta"
             className="text-pizarra underline-offset-4 hover:underline"

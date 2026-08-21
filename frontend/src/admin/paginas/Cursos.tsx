@@ -22,7 +22,7 @@ import {
 import { cursosAdmin, periodos, personas, programas, type CursoAdmin } from '../datos'
 
 /*
-  Un curso en Educa no es una asignatura: es una asignatura impartida por
+  Un curso en DR360TRAINING no es una asignatura: es una asignatura impartida por
   alguien, en un periodo, con un cupo. La misma "Desarrollo de Aplicaciones
   Web" son dos cursos distintos si hay dos secciones, y por eso la columna de
   codigo lleva siempre la seccion pegada.
@@ -67,7 +67,7 @@ export function Cursos() {
     <div className="space-y-6">
       <EncabezadoPagina
         titulo="Cursos"
-        descripcion="Cada fila es una asignatura impartida en un periodo por un docente. Un curso en borrador no aparece para los estudiantes: solo empieza a existir para ellos cuando se publica."
+        descripcion="Cada fila es una asignatura impartida en un periodo por un instructor. Un curso en borrador no aparece para los estudiantes: solo empieza a existir para ellos cuando se publica."
         accion={
           <Boton
             variante="primario"
@@ -94,7 +94,7 @@ export function Cursos() {
                 pie: `${delPeriodo.filter((c) => c.estado === 'borrador').length} en borrador`,
               },
               {
-                etiqueta: 'Sin docente',
+                etiqueta: 'Sin instructor',
                 valor: String(sinDocente),
                 pie: 'No se pueden publicar',
                 alerta: sinDocente > 0,
@@ -114,7 +114,7 @@ export function Cursos() {
           <Buscador
             valor={texto}
             alCambiar={setTexto}
-            placeholder="Buscar por asignatura, código o docente"
+            placeholder="Buscar por asignatura, código o instructor"
             className="min-w-[240px] flex-1"
           />
           <FiltroSelect
@@ -144,7 +144,7 @@ export function Cursos() {
               { valor: 'publicado', texto: 'Publicados' },
               { valor: 'borrador', texto: 'Borradores' },
               { valor: 'cerrado', texto: 'Cerrados' },
-              { valor: 'sin-docente', texto: 'Sin docente' },
+              { valor: 'sin-docente', texto: 'Sin instructor' },
             ]}
           />
         </BarraFiltros>
@@ -166,7 +166,7 @@ export function Cursos() {
               <Encabezado>
                 <Th className="w-32">Código</Th>
                 <Th>Asignatura</Th>
-                <Th className="w-52">Docente</Th>
+                <Th className="w-52">Instructor</Th>
                 <Th className="hidden w-40 xl:table-cell">Programa</Th>
                 <Th className="w-36">Inscritos</Th>
                 <Th className="w-28">Estado</Th>
@@ -320,9 +320,9 @@ function DialogoCrearCurso({ abierto, alCerrar }: { abierto: boolean; alCerrar: 
 
         <BloqueFormulario titulo="Quién lo imparte">
           <Selector
-            etiqueta="Docente"
+            etiqueta="Instructor"
             vacio="Asignar más tarde"
-            ayuda="Solo aparecen las personas con rol docente y membresía activa. Sin docente, el curso no se puede publicar."
+            ayuda="Solo aparecen las personas con rol de instructor y membresía activa. Sin instructor, el curso no se puede publicar."
             opciones={docentes.map((d) => ({ valor: d.id, texto: d.nombre }))}
           />
         </BloqueFormulario>

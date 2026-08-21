@@ -4,12 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './app/App'
 import { ProveedorSesion } from './app/sesion'
+import { ProveedorVista } from './app/rol'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <ProveedorSesion>
-        <App />
+        <ProveedorVista>
+          <App />
+        </ProveedorVista>
       </ProveedorSesion>
     </BrowserRouter>
   </StrictMode>,

@@ -46,7 +46,7 @@ export function Resumen() {
 
   const atender = [
     sinDocente.length > 0 && {
-      texto: `${sinDocente.length} curso${sinDocente.length > 1 ? 's' : ''} del periodo sin docente asignado`,
+      texto: `${sinDocente.length} curso${sinDocente.length > 1 ? 's' : ''} del periodo sin instructor asignado`,
       detalle: sinDocente.map((c) => `${c.codigo}-${c.seccion}`).join(' · '),
       ruta: '/admin/cursos',
       accion: 'Asignar',
@@ -126,13 +126,13 @@ export function Resumen() {
         <AccionRapida
           icono={UserPlus}
           titulo="Invitar persona"
-          texto="Docente, estudiante o administrador"
+          texto="Instructor, estudiante o administrador"
           ruta="/admin/personas"
         />
         <AccionRapida
           icono={BookOpen}
           titulo="Crear curso"
-          texto="Asignatura, sección y docente"
+          texto="Asignatura, sección e instructor"
           ruta="/admin/cursos"
         />
         <AccionRapida
@@ -155,7 +155,7 @@ export function Resumen() {
             {
               etiqueta: 'Personas activas',
               valor: String(activas.length),
-              pie: `${docentes.length} docentes · ${estudiantes.length} estudiantes`,
+              pie: `${docentes.length} instructores · ${estudiantes.length} estudiantes`,
             },
             {
               etiqueta: 'Cursos del periodo',
@@ -163,7 +163,7 @@ export function Resumen() {
               pie: `${delPeriodo.filter((c) => c.estado === 'publicado').length} publicados`,
             },
             {
-              etiqueta: 'Sin docente',
+              etiqueta: 'Sin instructor',
               valor: String(sinDocente.length),
               pie: 'Bloquean la inscripción',
               alerta: sinDocente.length > 0,

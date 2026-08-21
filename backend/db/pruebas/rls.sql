@@ -85,7 +85,7 @@ select pg_temp.afirmar((select count(*) from usuarios) = 3, 'educa_auth puede da
 set role educa_app;
 
 select set_config('app.usuario_id', :'ana_id', true);
-select id from app.crear_institucion('Universidad Central del Este', 'uce', 'UCE') \gset uce_
+select id from app.crear_institucion('Instituto Tecnico del Caribe', 'itc', 'ITC') \gset uce_
 
 select set_config('app.usuario_id', :'luis_id', true);
 select id from app.crear_institucion('Pontificia Universidad Catolica', 'pucmm', 'PUCMM') \gset pucmm_

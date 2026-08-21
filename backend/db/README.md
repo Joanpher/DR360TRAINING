@@ -1,4 +1,4 @@
-# Base de datos de educa
+# Base de datos de DR360TRAINING
 
 PostgreSQL, un solo esquema compartido por todas las instituciones y **Row Level
 Security** como frontera entre ellas. Las migraciones son SQL puro: las
@@ -136,7 +136,7 @@ ella, pero el primer administrador no existe hasta que la institucion existe.
 ```sql
 begin;
 select set_config('app.usuario_id', '<uuid del usuario recien registrado>', true);
-select * from app.crear_institucion('Universidad Central del Este', 'uce', 'UCE');
+select * from app.crear_institucion('Instituto Tecnico del Caribe', 'itc', 'ITC');
 commit;
 ```
 

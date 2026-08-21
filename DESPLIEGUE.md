@@ -11,7 +11,7 @@ El frontend sigue llamando a `/api/...` en relativo. Vercel reenvia esas rutas a
 Render con un *rewrite*, asi que **el navegador solo ve un dominio**.
 
 No es un capricho: la sesion se sostiene con una cookie `httpOnly` +
-`SameSite=Strict`. Si la web llamara a `educa-api.onrender.com` desde
+`SameSite=Strict`. Si la web llamara a `dr360training.onrender.com` desde
 `tu-app.vercel.app`, esa cookie seria de terceros y el navegador dejaria de
 mandarla —la sesion se caeria en cada refresco—. Arreglarlo por la otra via
 obliga a `SameSite=None`, a CORS con credenciales y a mantener una lista de
@@ -26,7 +26,7 @@ del dominio de Vercel.
 ## 1. Desplegar la API en Render
 
 1. Render → **New → Blueprint** → conectar `Joanpher/DR360TRAINING`.
-   Detecta `render.yaml` y crea el servicio `educa-api`.
+   Detecta `render.yaml` y crea el servicio `dr360training-api`.
 2. Rellenar las variables marcadas como `sync: false`:
 
    | Variable            | Valor                                         |
@@ -46,7 +46,7 @@ del dominio de Vercel.
 
 3. Ajustar `region` en `render.yaml` a la region de RDS si no es `virginia`.
    Cada consulta cruza esa distancia.
-4. Anotar la URL que asigna Render, del estilo `https://educa-api.onrender.com`.
+4. Anotar la URL que asigna Render, del estilo `https://dr360training.onrender.com`.
 
 ### Acceso a RDS
 
@@ -57,7 +57,7 @@ fijas —para meterlas en la lista— a partir de los planes de pago.
 ### Comprobacion
 
 ```
-GET https://educa-api.onrender.com/api/salud
+GET https://dr360training.onrender.com/api/salud
 ```
 
 Debe responder `{"api":"ok","base":"ok",...}`. Si dice `"base":"sin conexion"`,

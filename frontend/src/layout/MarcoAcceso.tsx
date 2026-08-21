@@ -49,7 +49,7 @@ export function MarcoAcceso({
               Las clases, las entregas y las notas en un solo registro.
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/60">
-              Cada institución opera dentro de Educa con sus datos separados de
+              Cada institución opera dentro de DR360TRAINING con sus datos separados de
               las demás. Crea la tuya o entra con la cuenta que te asignaron.
             </p>
           </div>
@@ -100,7 +100,7 @@ export function MarcoAcceso({
           </div>
 
           <footer className="mx-auto mt-10 flex w-full max-w-[400px] items-center justify-between">
-            <span className="etiqueta-dato text-tinta-suave">Educa v0.1</span>
+            <span className="etiqueta-dato text-tinta-suave">DR360TRAINING v0.1</span>
             <span className="etiqueta-dato text-tinta-suave">
               República Dominicana
             </span>

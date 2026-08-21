@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  Runner de migraciones de educa.
+  Runner de migraciones de DR360TRAINING.
 
   Un archivo .sql por migracion, aplicado una sola vez, dentro de una
   transaccion, con el resto de procesos esperando en un lock. Nada mas: las

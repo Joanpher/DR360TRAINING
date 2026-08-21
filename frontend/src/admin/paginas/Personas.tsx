@@ -24,7 +24,7 @@ import { personas, type Persona } from '../datos'
 const OPCIONES_ROL = [
   { valor: 'todos', texto: 'Todos' },
   { valor: 'administrador', texto: 'Administración' },
-  { valor: 'docente', texto: 'Docentes' },
+  { valor: 'docente', texto: 'Instructores' },
   { valor: 'estudiante', texto: 'Estudiantes' },
   { valor: 'invitado', texto: 'Invitados' },
 ]
@@ -75,7 +75,7 @@ export function Personas() {
     <div className="space-y-6">
       <EncabezadoPagina
         titulo="Usuarios"
-        descripcion="Todas las personas que pertenecen a la institución. Un usuario existe una sola vez en Educa; lo que se administra aquí es su membresía: el rol que tiene dentro de esta institución y su estado."
+        descripcion="Todas las personas que pertenecen a la institución. Un usuario existe una sola vez en DR360TRAINING; lo que se administra aquí es su membresía: el rol que tiene dentro de esta institución y su estado."
         accion={
           <div className="flex gap-2">
             <Boton

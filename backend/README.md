@@ -1,4 +1,4 @@
-# API de educa
+# API de DR360TRAINING
 
 NestJS sobre PostgreSQL. La particularidad del proyecto es que **el aislamiento
 entre instituciones no lo hace este código**: lo hace la base de datos con Row

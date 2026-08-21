@@ -19,13 +19,13 @@ export function SitioPublico() {
     setMenu(false)
     window.scrollTo({ top: 0, behavior: 'instant' })
     const titulos: Record<string, string> = {
-      '/': 'Educa · Plataforma académica',
-      '/producto': 'Producto · Educa',
-      '/soluciones': 'Soluciones · Educa',
-      '/seguridad': 'Seguridad · Educa',
-      '/nosotros': 'Nosotros · Educa',
+      '/': 'DR360TRAINING · Plataforma académica',
+      '/producto': 'Producto · DR360TRAINING',
+      '/soluciones': 'Soluciones · DR360TRAINING',
+      '/seguridad': 'Seguridad · DR360TRAINING',
+      '/nosotros': 'Nosotros · DR360TRAINING',
     }
-    document.title = titulos[pathname] ?? 'Educa'
+    document.title = titulos[pathname] ?? 'DR360TRAINING'
   }, [pathname])
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function SitioPublico() {
     <div className="min-h-screen bg-[#f7f8f5] text-tinta">
       <header className="sticky top-0 z-50 border-b border-regla bg-[#f7f8f5]/95 backdrop-blur-md">
         <div className="mx-auto flex h-[70px] max-w-[1200px] items-center px-5 sm:px-8">
-          <Link to="/" aria-label="Educa, inicio"><Marca tono="oscuro" /></Link>
+          <Link to="/" aria-label="DR360TRAINING, inicio"><Marca tono="oscuro" /></Link>
           <nav className="mx-auto hidden items-center gap-1 md:flex" aria-label="Navegación principal">
             {enlaces.map(([etiqueta, ruta]) => (
               <NavLink key={ruta} to={ruta} className={({ isActive }) => cn(
@@ -76,9 +76,9 @@ export function SitioPublico() {
         <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-14 sm:px-8 md:grid-cols-[1fr_auto_auto]">
           <div><Marca tono="claro" /><p className="mt-4 max-w-sm text-sm leading-6 text-white/50">Una plataforma académica clara para instituciones que ponen el aprendizaje primero.</p></div>
           <div><p className="etiqueta-dato text-white/35">Plataforma</p><div className="mt-4 grid gap-3 text-sm text-white/60"><Link to="/producto" className="hover:text-white">Producto</Link><Link to="/soluciones" className="hover:text-white">Soluciones</Link><Link to="/seguridad" className="hover:text-white">Seguridad</Link></div></div>
-          <div><p className="etiqueta-dato text-white/35">Educa</p><div className="mt-4 grid gap-3 text-sm text-white/60"><Link to="/nosotros" className="hover:text-white">Nosotros</Link><Link to="/acceso" className="hover:text-white">Iniciar sesión</Link><Link to="/crear-cuenta" className="hover:text-white">Crear cuenta</Link></div></div>
+          <div><p className="etiqueta-dato text-white/35">DR360TRAINING</p><div className="mt-4 grid gap-3 text-sm text-white/60"><Link to="/nosotros" className="hover:text-white">Nosotros</Link><Link to="/acceso" className="hover:text-white">Iniciar sesión</Link><Link to="/crear-cuenta" className="hover:text-white">Crear cuenta</Link></div></div>
         </div>
-        <div className="border-t border-white/10 px-5 py-5 sm:px-8"><div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-3 font-dato text-[10px] uppercase tracking-widest text-white/30"><span>© 2026 Educa</span><span>República Dominicana</span></div></div>
+        <div className="border-t border-white/10 px-5 py-5 sm:px-8"><div className="mx-auto flex max-w-[1200px] flex-wrap justify-between gap-3 font-dato text-[10px] uppercase tracking-widest text-white/30"><span>© 2026 DR360TRAINING</span><span>República Dominicana</span></div></div>
       </footer>
     </div>
   )

@@ -32,7 +32,7 @@ async function arrancar() {
   // escuchando solo en localhost el puerto quedaria abierto para nadie y el
   // health check daria el despliegue por muerto.
   await app.listen(puerto, '0.0.0.0');
-  new Logger('educa').log(`API escuchando en el puerto ${puerto}, prefijo /api`);
+  new Logger('dr360').log(`API escuchando en el puerto ${puerto}, prefijo /api`);
 }
 
 void arrancar();

@@ -37,11 +37,11 @@ import { Sedes } from '../admin/paginas/Sedes'
 import { Institucion } from '../admin/paginas/Institucion'
 import { Bitacora } from '../admin/paginas/Bitacora'
 import { Marca } from '../ui/Marca'
-import { traducirRoles } from './rol'
+import { useVista } from './rol'
 import { useSesion } from './sesion'
 
 /*
-  Entrar a Educa son tres preguntas encadenadas: quién eres, desde qué
+  Entrar a DR360TRAINING son tres preguntas encadenadas: quién eres, desde qué
   institución, y qué eres dentro de ella. Este componente es el que las ordena,
   y por eso las redirecciones viven aquí y no repartidas por cada formulario:
   cada pantalla se limita a hacer su llamada, y el sitio al que se va después
@@ -53,14 +53,19 @@ import { useSesion } from './sesion'
     membresía de administración  el panel de administración
     el resto ................... la plataforma de aprendizaje
 
-  La tercera pregunta antes se respondía dentro de la aplicación, con un
-  selector de rol en la barra superior. Estaba mal: hacía parecer que el panel
-  era una preferencia cuando es una consecuencia de lo que la persona es en su
-  institución. Ahora el rol llega con la sesión y decide el árbol de rutas
-  entero; no hay ninguna dirección compartida entre un panel y otro.
+  La tercera la responde la sesión y no la persona: el panel no es una
+  preferencia sino una consecuencia de lo que se es dentro de la institución.
+  El rol llega con la sesión y decide el árbol de rutas entero; no hay ninguna
+  dirección compartida entre un panel y otro.
+
+  La excepción es quien administra, que puede asomarse a los otros dos paneles
+  desde la barra superior. Sigue sin ser una preferencia: es una herramienta
+  para ver lo que ve otro, y solo cambia las pantallas que se dibujan. Qué
+  datos llegan a ellas lo decide el token de siempre.
 */
 export default function App() {
-  const { estado, instituciones, institucion, roles } = useSesion()
+  const { estado, instituciones, institucion } = useSesion()
+  const { rol } = useVista()
   const { pathname } = useLocation()
 
   if (['/', '/producto', '/soluciones', '/seguridad', '/nosotros'].includes(pathname)) {
@@ -104,7 +109,13 @@ export default function App() {
     )
   }
 
-  return traducirRoles(roles) === 'admin' ? <RutasAdmin /> : <RutasAprendizaje />
+  /*
+    Con la vista y no con la membresía a pelo: así el selector de la barra
+    superior cambia el árbol de rutas entero y no solo el aspecto de unas
+    cuantas pantallas. Para quien no administra los dos valores son el mismo,
+    y esta línea se comporta igual que antes de que el selector existiera.
+  */
+  return rol === 'admin' ? <RutasAdmin /> : <RutasAprendizaje />
 }
 
 function RutasPublicas() {
@@ -212,7 +223,7 @@ function RutasAprendizaje() {
             <Pendiente
               titulo="Mensajes"
               icono={MessageSquare}
-              texto="Conversaciones directas y foros por curso, con moderación para el equipo docente."
+              texto="Conversaciones directas y foros por curso, con moderación para los instructores."
             />
           }
         />

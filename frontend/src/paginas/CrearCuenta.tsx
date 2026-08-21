@@ -40,7 +40,7 @@ export function CrearCuenta() {
   return (
     <MarcoAcceso
       entrada="Crear cuenta"
-      titulo="Empieza en Educa"
+      titulo="Empieza en DR360TRAINING"
       descripcion="Primero la cuenta, después la institución. Son dos cosas distintas y en ese orden."
       pie={
         <p className="text-[13px] leading-relaxed text-tinta-media">

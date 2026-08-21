@@ -82,7 +82,7 @@ export class CrearInstitucionDto {
   nombre!: string;
 
   /*
-    El slug es la direccion publica de la institucion (uce.educa.do) y no se
+    El slug es la direccion publica de la institucion (itc.dr360training.com) y no se
     reutiliza nunca. La misma regla que valida la columna en la base.
   */
   @enMinusculas()
