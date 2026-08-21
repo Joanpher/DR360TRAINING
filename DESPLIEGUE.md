@@ -71,8 +71,8 @@ segundos en despertarlo. Para enseñarle el sistema a alguien, conviene abrir
 
 ## 2. Apuntar el frontend a esa URL
 
-En [`frontend/vercel.json`](frontend/vercel.json), cambiar el `destination` por
-la URL real de Render:
+En [`vercel.json`](vercel.json) (en la raiz), cambiar el `destination` por la URL
+real de Render:
 
 ```json
 {
@@ -91,9 +91,14 @@ podria acabar servida a otro.
 ## 3. Desplegar la web en Vercel
 
 1. Vercel → **Add New → Project** → importar el repositorio.
-2. **Root Directory: `frontend`** (importante: ahi vive `vercel.json`).
-   Framework: Vite. El resto por defecto.
-3. **Deploy**. El frontend no necesita ninguna variable de entorno.
+2. **Sin tocar nada mas**: Deploy. El frontend no necesita variables de entorno.
+
+El `vercel.json` de la raiz lleva la configuracion entera del build
+(`framework`, `installCommand`, `buildCommand` y `outputDirectory`), y esas
+cuatro claves **anulan** lo que diga el panel. Vive en la raiz y no en
+`frontend/` a proposito: asi no hay que tocar el Root Directory del proyecto y
+la configuracion viaja en el repositorio, en vez de quedarse en unos
+desplegables que nadie recuerda haber cambiado.
 
 La regla `"/(.*)" → "/index.html"` es el *fallback* del SPA. Se aplica solo
 cuando ningun fichero estatico coincide, asi que `/assets/*` no se ve afectado.
