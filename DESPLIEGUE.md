@@ -3,7 +3,7 @@
 | Pieza    | Donde  | Raiz        | Configuracion          |
 | -------- | ------ | ----------- | ---------------------- |
 | API Nest | Render | `backend/`  | `render.yaml`          |
-| Web Vite | Vercel | `frontend/` | `frontend/vercel.json` |
+| Web Vite | Vercel | `frontend/` | `vercel.json` (raiz)   |
 
 ## Por que Vercel hace de proxy y no se llama a Render directamente
 
