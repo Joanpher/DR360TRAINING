@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:ruta*",
-      "destination": "https://educa-api.onrender.com/api/:ruta*"
+      "destination": "https://dr360training.onrender.com/api/:ruta*"
     },
     {
       "source": "/(.*)",
