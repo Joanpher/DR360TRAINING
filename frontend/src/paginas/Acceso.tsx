@@ -46,8 +46,7 @@ export function Acceso() {
           >
             Crea una cuenta
           </Link>
-          . Si tu universidad ya está aquí, las cuentas las crea ella y te
-          llegan por invitación.
+          . Si tu institución ya está aquí, la administración crea tu cuenta.
         </p>
       }
     >

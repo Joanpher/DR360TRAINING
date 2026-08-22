@@ -672,7 +672,9 @@ function CampoColor({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="etiqueta-dato text-tinta-media">{etiqueta}</span>
+      <span className="etiqueta-dato text-[11.5px] font-semibold text-tinta">
+        {etiqueta}
+      </span>
       <div className="flex h-11 items-center gap-2 rounded-sm border border-regla-fuerte bg-superficie pl-2 pr-3 focus-within:border-pizarra focus-within:ring-2 focus-within:ring-pizarra/15">
         <input
           type="color"

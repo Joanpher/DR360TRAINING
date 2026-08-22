@@ -3,12 +3,11 @@ import { MoreHorizontal } from 'lucide-react'
 import { Etiqueta } from '../ui/Etiqueta'
 import { cn } from '../ui/cn'
 import { nombreRolInstitucional } from '../app/rol'
-import type {
-  EstadoCurso,
-  EstadoInvitacion,
-  EstadoMembresia,
-  RolInstitucional,
-} from './datos'
+import type { EstadoCurso } from './catalogo'
+import type { EstadoCargo, EstadoInscripcion } from './inscripciones'
+import { nombreEstadoCargo, nombreEstadoInscripcion } from './inscripciones'
+import type { EstadoInvitacion } from './datos'
+import type { EstadoMembresia, RolInstitucional } from './personas'
 
 /*
   Piezas que se repiten en todas las pantallas del panel. Viven juntas porque
@@ -65,7 +64,7 @@ export function FiltroSelect({
 }) {
   return (
     <label className="flex items-center gap-1.5">
-      <span className="etiqueta-dato text-tinta-suave">{etiqueta}</span>
+      <span className="etiqueta-dato text-[11.5px] font-semibold text-tinta">{etiqueta}</span>
       <select
         value={valor}
         onChange={(e) => alCambiar(e.target.value)}
@@ -138,19 +137,50 @@ export function EstadoDeMembresia({ estado }: { estado: EstadoMembresia }) {
 }
 
 const tonoCurso = {
-  publicado: 'aprobado',
-  borrador: 'aviso',
-  cerrado: 'neutro',
+  promocion: 'aviso',
+  activo: 'aprobado',
+  graduado: 'neutro',
 } as const
 
 const textoCurso: Record<EstadoCurso, string> = {
-  publicado: 'Publicado',
-  borrador: 'Borrador',
-  cerrado: 'Cerrado',
+  promocion: 'En promoción',
+  activo: 'Activo',
+  graduado: 'Graduado',
 }
 
 export function EstadoDeCurso({ estado }: { estado: EstadoCurso }) {
   return <Etiqueta tono={tonoCurso[estado]}>{textoCurso[estado]}</Etiqueta>
+}
+
+/*
+  Una inscripcion tiene cinco estados y solo dos importan de un vistazo: la que
+  esta cursando y la que se fue. Las demas van en gris porque son finales -ya no
+  hay nada que hacer con ellas- y pintarlas de colores las haria competir con las
+  filas que si piden atencion.
+*/
+const tonoInscripcion = {
+  activa: 'aprobado',
+  preinscrita: 'aviso',
+  completada: 'info',
+  retirada: 'correccion',
+  cancelada: 'neutro',
+} as const
+
+export function EstadoDeInscripcion({ estado }: { estado: EstadoInscripcion }) {
+  return (
+    <Etiqueta tono={tonoInscripcion[estado]}>{nombreEstadoInscripcion[estado]}</Etiqueta>
+  )
+}
+
+const tonoCargo = {
+  pagado: 'aprobado',
+  pendiente: 'aviso',
+  condonado: 'info',
+  anulado: 'neutro',
+} as const
+
+export function EstadoDeCargo({ estado }: { estado: EstadoCargo }) {
+  return <Etiqueta tono={tonoCargo[estado]}>{nombreEstadoCargo[estado]}</Etiqueta>
 }
 
 const tonoInvitacion = {

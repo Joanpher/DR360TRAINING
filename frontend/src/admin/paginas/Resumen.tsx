@@ -4,73 +4,104 @@ import {
   BookOpen,
   Check,
   CircleAlert,
-  GraduationCap,
   Send,
   UserPlus,
 } from 'lucide-react'
 import { Ficha, FichaCabecera } from '../../ui/Ficha'
-import { Etiqueta } from '../../ui/Etiqueta'
 import { cn } from '../../ui/cn'
 import { useSesion } from '../../app/sesion'
-import { Cifras, EncabezadoPagina } from '../piezas'
-import {
-  bitacora,
-  cursosAdmin,
-  invitaciones,
-  periodos,
-  personas,
-  puestaEnMarcha,
-} from '../datos'
+import { useConsulta } from '../../datos/consulta'
+import { Cifras, EncabezadoPagina, EstadoDeInscripcion } from '../piezas'
+import { dinero, fechaLegible, type Categoria, type Curso } from '../catalogo'
+import type { Inscripcion } from '../inscripciones'
+import { invitaciones, personas } from '../datos'
+
+type Lista = { inscripciones: Inscripcion[]; total: number }
 
 /*
-  La primera pantalla del administrador no es un tablero de metricas bonitas:
-  es una lista de lo que esta pendiente. Un rector no abre el panel para saber
-  cuantos usuarios tiene, lo abre porque algo hay que resolver. Por eso "Hay
-  que atender" va arriba y las cifras, que casi nunca cambian de un dia a otro,
+  La primera pantalla del administrador no es un tablero de métricas bonitas: es
+  una lista de lo que está pendiente. Nadie abre el panel para saber cuántos
+  usuarios tiene, lo abre porque algo hay que resolver. Por eso "Hay que
+  atender" va arriba y las cifras, que casi nunca cambian de un día para otro,
   van debajo como contexto.
 */
 export function Resumen() {
   const { usuario, institucion } = useSesion()
-  const periodoActivo = periodos.find((p) => p.estado === 'activo')
 
-  const delPeriodo = cursosAdmin.filter((c) => c.periodo === periodoActivo?.codigo)
-  const sinDocente = delPeriodo.filter((c) => !c.docente)
-  const enBorrador = delPeriodo.filter((c) => c.estado === 'borrador')
+  const { datos: cat } = useConsulta<{ cursos: Curso[] }>('/catalogo/cursos')
+  const { datos: cats } = useConsulta<{ categorias: Categoria[] }>('/catalogo/categorias')
+  const { datos: ultimas } = useConsulta<Lista>('/inscripciones?porPagina=6')
+  const { datos: deudoras } = useConsulta<Lista>('/inscripciones?conDeuda=true&porPagina=1')
+
+  const cursos = cat?.cursos ?? []
+  const disponibles = cursos.filter((c) => c.estado !== 'graduado')
+  const sinInstructor = cursos.filter((c) => !c.instructorMembresiaId)
   const pendientes = invitaciones.filter((i) => i.estado === 'pendiente')
-  const activas = personas.filter((p) => p.estado === 'activa')
-  const docentes = activas.filter((p) => p.roles.includes('docente'))
-  const estudiantes = activas.filter((p) => p.roles.includes('estudiante'))
+  const conDeuda = deudoras?.total ?? 0
+
+  /*
+    La puesta en marcha se calcula de lo que hay de verdad en la base, no de una
+    lista fija. Una checklist que sigue diciendo "pendiente" después de hacerlo,
+    o "hecho" antes, deja de leerse a la semana.
+  */
+  const puestaEnMarcha = [
+    {
+      paso: 'Crear la institución',
+      hecho: Boolean(institucion),
+      ruta: '/admin/institucion',
+    },
+    {
+      paso: 'Organizar el catálogo en categorías',
+      hecho: (cats?.categorias.length ?? 0) > 0,
+      ruta: '/admin/categorias',
+    },
+    {
+      paso: 'Registrar a los instructores',
+      hecho: cursos.some((c) => c.instructorMembresiaId),
+      ruta: '/admin/personas/nueva',
+    },
+    {
+      paso: 'Crear el primer curso',
+      hecho: cursos.length > 0,
+      ruta: '/admin/cursos',
+    },
+    {
+      paso: 'Completar la programación del curso',
+      hecho: cursos.some(
+        (c) => c.instructorMembresiaId && c.iniciaEn && c.duracionSemanas && c.horarios.length > 0,
+      ),
+      ruta: '/admin/cursos',
+    },
+    {
+      paso: 'Inscribir a la primera persona',
+      hecho: (ultimas?.total ?? 0) > 0,
+      ruta: '/admin/inscripciones',
+    },
+  ]
 
   const hechos = puestaEnMarcha.filter((p) => p.hecho).length
   const avance = Math.round((hechos / puestaEnMarcha.length) * 100)
 
   const atender = [
-    sinDocente.length > 0 && {
-      texto: `${sinDocente.length} curso${sinDocente.length > 1 ? 's' : ''} del periodo sin instructor asignado`,
-      detalle: sinDocente.map((c) => `${c.codigo}-${c.seccion}`).join(' · '),
+    sinInstructor.length > 0 && {
+      texto: `${sinInstructor.length} curso${sinInstructor.length > 1 ? 's' : ''} sin instructor asignado`,
+      detalle: sinInstructor.map((c) => c.codigo).join(' · '),
       ruta: '/admin/cursos',
       accion: 'Asignar',
       grave: true,
     },
-    enBorrador.length > 0 && {
-      texto: `${enBorrador.length} curso${enBorrador.length > 1 ? 's' : ''} en borrador sin publicar`,
-      detalle: 'Los estudiantes no pueden inscribirse hasta que se publiquen',
-      ruta: '/admin/cursos',
-      accion: 'Revisar',
-      grave: false,
+    conDeuda > 0 && {
+      texto: `${conDeuda} inscripci${conDeuda > 1 ? 'ones' : 'ón'} con saldo pendiente`,
+      detalle: 'El cargo se generó y todavía no se ha cobrado del todo',
+      ruta: '/admin/inscripciones',
+      accion: 'Cobrar',
+      grave: true,
     },
     pendientes.length > 0 && {
       texto: `${pendientes.length} invitaciones sin aceptar`,
-      detalle: 'Una vence mañana',
+      detalle: 'Caducan a los siete días de enviarse',
       ruta: '/admin/invitaciones',
       accion: 'Ver',
-      grave: false,
-    },
-    {
-      texto: 'El dominio uce.edu.do no está verificado',
-      detalle: 'Sin verificar, nadie puede entrar con su correo institucional',
-      ruta: '/admin/institucion',
-      accion: 'Verificar',
       grave: false,
     },
   ].filter(Boolean) as Array<{
@@ -85,240 +116,212 @@ export function Resumen() {
     <div className="space-y-6">
       <EncabezadoPagina
         titulo={`Buen día, ${usuario?.nombres?.split(' ')[0] ?? ''}`}
-        descripcion={`Estás administrando ${institucion?.nombre ?? 'tu institución'}. Periodo ${periodoActivo?.codigo ?? 'sin abrir'}, del ${periodoActivo?.inicio ?? '—'} al ${periodoActivo?.fin ?? '—'}.`}
+        descripcion={`Estás administrando ${institucion?.nombre ?? 'tu institución'}. ${
+          disponibles.length > 0
+            ? `${disponibles.length} curso${disponibles.length > 1 ? 's' : ''} disponible${disponibles.length > 1 ? 's' : ''}.`
+            : 'Todavía no hay cursos disponibles.'
+        }`}
       />
 
       <Ficha>
         <FichaCabecera
           titulo="Hay que atender"
-          descripcion="Lo que impide que el periodo funcione del todo"
+          descripcion="Lo que impide que el centro funcione del todo"
         />
-        <ul>
-          {atender.map((item) => (
-            <li
-              key={item.texto}
-              className="flex items-start gap-3.5 border-b border-regla px-5 py-3.5 last:border-b-0"
-            >
-              <CircleAlert
-                size={17}
-                strokeWidth={1.5}
-                className={cn('mt-0.5 shrink-0', item.grave ? 'text-correccion' : 'text-aviso')}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-medium text-tinta">{item.texto}</p>
-                <p className="mt-0.5 truncate text-[12.5px] text-tinta-suave">
-                  {item.detalle}
-                </p>
-              </div>
-              <Link
-                to={item.ruta}
-                className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-pizarra underline-offset-4 hover:underline"
+        {atender.length === 0 ? (
+          <p className="flex items-center gap-2 px-5 py-4 text-[13.5px] text-tinta-media">
+            <Check size={16} strokeWidth={1.75} className="text-pizarra" />
+            Nada pendiente. Los cursos están programados y las cuentas al día.
+          </p>
+        ) : (
+          <ul>
+            {atender.map((item) => (
+              <li
+                key={item.texto}
+                className="flex items-start gap-3.5 border-b border-regla px-5 py-3.5 last:border-b-0"
               >
-                {item.accion}
-                <ArrowRight size={14} strokeWidth={1.75} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+                <CircleAlert
+                  size={17}
+                  strokeWidth={1.5}
+                  className={cn('mt-0.5 shrink-0', item.grave ? 'text-correccion' : 'text-aviso')}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-medium text-tinta">{item.texto}</p>
+                  <p className="mt-0.5 truncate text-[12.5px] text-tinta-suave">{item.detalle}</p>
+                </div>
+                <Link
+                  to={item.ruta}
+                  className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-pizarra underline-offset-4 hover:underline"
+                >
+                  {item.accion}
+                  <ArrowRight size={14} strokeWidth={1.75} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </Ficha>
-
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <AccionRapida
-          icono={UserPlus}
-          titulo="Invitar persona"
-          texto="Instructor, estudiante o administrador"
-          ruta="/admin/personas"
-        />
-        <AccionRapida
-          icono={BookOpen}
-          titulo="Crear curso"
-          texto="Asignatura, sección e instructor"
-          ruta="/admin/cursos"
-        />
-        <AccionRapida
-          icono={GraduationCap}
-          titulo="Registrar programa"
-          texto="Carrera, maestría o diplomado"
-          ruta="/admin/programas"
-        />
-        <AccionRapida
-          icono={Send}
-          titulo="Importar desde CSV"
-          texto="Alta masiva de estudiantes"
-          ruta="/admin/personas"
-        />
-      </div>
 
       <Ficha>
         <Cifras
           datos={[
             {
-              etiqueta: 'Personas activas',
-              valor: String(activas.length),
-              pie: `${docentes.length} instructores · ${estudiantes.length} estudiantes`,
+              etiqueta: 'Cursos disponibles',
+              valor: String(disponibles.length),
+              pie: `${cursos.length} en el catálogo`,
             },
             {
-              etiqueta: 'Cursos del periodo',
-              valor: String(delPeriodo.length),
-              pie: `${delPeriodo.filter((c) => c.estado === 'publicado').length} publicados`,
+              etiqueta: 'Inscripciones',
+              valor: String(ultimas?.total ?? 0),
+              pie: 'Desde que abrió el centro',
             },
             {
-              etiqueta: 'Sin instructor',
-              valor: String(sinDocente.length),
-              pie: 'Bloquean la inscripción',
-              alerta: sinDocente.length > 0,
+              etiqueta: 'Con saldo pendiente',
+              valor: String(conDeuda),
+              pie: 'Cargos sin cobrar del todo',
+              alerta: conDeuda > 0,
             },
             {
-              etiqueta: 'Invitaciones',
-              valor: String(pendientes.length),
-              pie: 'Pendientes de aceptar',
+              etiqueta: 'Personas',
+              valor: String(personas.filter((p) => p.estado === 'activa').length),
+              pie: 'Membresías activas',
             },
           ]}
         />
       </Ficha>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Ficha>
           <FichaCabecera
-            titulo="Puesta en marcha"
-            descripcion={`${hechos} de ${puestaEnMarcha.length} pasos completados`}
+            titulo="Últimas inscripciones"
             accion={
-              <span className="font-dato text-[13px] tabular-nums text-tinta-media">
-                {avance}%
-              </span>
+              <Link
+                to="/admin/inscripciones"
+                className="text-[13px] font-medium text-pizarra underline-offset-4 hover:underline"
+              >
+                Ver todas
+              </Link>
             }
           />
-          <div className="h-1 bg-regla">
-            <div className="h-full bg-pizarra" style={{ width: `${avance}%` }} />
-          </div>
+          {(ultimas?.inscripciones.length ?? 0) === 0 ? (
+            <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+              <UserPlus size={20} strokeWidth={1.5} className="text-tinta-suave" />
+              <p className="max-w-sm text-[13px] leading-relaxed text-tinta-media">
+                Todavía no se ha inscrito nadie. Al inscribir a una persona nueva el sistema le
+                emite su matrícula y su clave, y genera el cargo del curso.
+              </p>
+              <Link
+                to="/admin/inscripciones"
+                className="text-[13px] font-medium text-pizarra underline-offset-4 hover:underline"
+              >
+                Inscribir a alguien
+              </Link>
+            </div>
+          ) : (
+            <ul>
+              {ultimas?.inscripciones.map((i) => (
+                <li
+                  key={i.id}
+                  className="flex items-center gap-3 border-b border-regla px-5 py-3 last:border-b-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-medium text-tinta">{i.nombre}</p>
+                    <p className="mt-0.5 truncate text-[12px] text-tinta-suave">
+                      <span className="font-dato text-pizarra">{i.codigoCurso}</span> {i.curso} ·{' '}
+                      {fechaLegible(i.inscritoEn)}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'shrink-0 font-dato text-[12.5px] tabular-nums',
+                      Number(i.deuda) > 0 ? 'text-correccion' : 'text-tinta-suave',
+                    )}
+                  >
+                    {Number(i.deuda) > 0 ? dinero(i.deuda) : 'Al día'}
+                  </span>
+                  <EstadoDeInscripcion estado={i.estado} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Ficha>
+
+        <Ficha>
+          <FichaCabecera titulo="Puesta en marcha" descripcion={`${avance}% completado`} />
           <ul>
             {puestaEnMarcha.map((paso) => (
-              <li key={paso.paso} className="border-b border-regla last:border-b-0">
+              <li
+                key={paso.paso}
+                className="flex items-center gap-3 border-b border-regla px-5 py-2.5 last:border-b-0"
+              >
+                <span
+                  className={cn(
+                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                    paso.hecho
+                      ? 'border-pizarra bg-pizarra text-white'
+                      : 'border-regla-fuerte bg-superficie',
+                  )}
+                >
+                  {paso.hecho && <Check size={11} strokeWidth={3} />}
+                </span>
                 <Link
                   to={paso.ruta}
-                  className="flex items-center gap-3 px-5 py-2.5 hover:bg-lienzo"
-                >
-                  <span
-                    className={cn(
-                      'flex h-4.5 w-4.5 shrink-0 items-center justify-center border rounded-xs',
-                      paso.hecho
-                        ? 'border-pizarra bg-pizarra text-white'
-                        : 'border-regla-fuerte bg-superficie',
-                    )}
-                  >
-                    {paso.hecho && <Check size={12} strokeWidth={2.5} />}
-                  </span>
-                  <span
-                    className={cn(
-                      'flex-1 text-[13.5px]',
-                      paso.hecho ? 'text-tinta-suave line-through' : 'text-tinta',
-                    )}
-                  >
-                    {paso.paso}
-                  </span>
-                  {!paso.hecho && (
-                    <ArrowRight size={14} strokeWidth={1.75} className="text-tinta-suave" />
+                  className={cn(
+                    'flex-1 text-[13px] underline-offset-4 hover:underline',
+                    paso.hecho ? 'text-tinta-suave' : 'text-tinta',
                   )}
+                >
+                  {paso.paso}
                 </Link>
               </li>
             ))}
           </ul>
         </Ficha>
-
-        <div className="space-y-6">
-          <Ficha>
-            <FichaCabecera
-              titulo="Periodo activo"
-              accion={<Etiqueta tono="aprobado">{periodoActivo?.codigo}</Etiqueta>}
-            />
-            <dl className="divide-y divide-regla">
-              {[
-                ['Nombre', periodoActivo?.nombre ?? '—'],
-                ['Docencia', `${periodoActivo?.inicio} – ${periodoActivo?.fin}`],
-                ['Inscripción', periodoActivo?.inscripcion ?? '—'],
-                ['Cursos abiertos', String(periodoActivo?.cursos ?? 0)],
-              ].map(([clave, valor]) => (
-                <div key={clave} className="flex items-baseline gap-4 px-5 py-2.5">
-                  <dt className="etiqueta-dato w-28 shrink-0 text-tinta-suave">{clave}</dt>
-                  <dd className="text-[13.5px] text-tinta">{valor}</dd>
-                </div>
-              ))}
-            </dl>
-            <Link
-              to="/admin/periodos"
-              className="flex items-center justify-between border-t border-regla px-5 py-2.5 text-[13px] text-tinta-media hover:bg-lienzo hover:text-pizarra"
-            >
-              Administrar periodos
-              <ArrowRight size={14} strokeWidth={1.5} />
-            </Link>
-          </Ficha>
-
-          <Ficha>
-            <FichaCabecera titulo="Últimos movimientos" descripcion="Registrados en la bitácora" />
-            <ul>
-              {bitacora.slice(0, 5).map((evento) => (
-                <li
-                  key={evento.id}
-                  className="border-b border-regla px-5 py-3 last:border-b-0"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-[13px] text-tinta">
-                      <span className="font-medium">{evento.actor}</span>{' '}
-                      <span className="text-tinta-media">
-                        {evento.accion.toLowerCase()}
-                      </span>
-                    </p>
-                    <span className="shrink-0 font-dato text-[11px] text-tinta-suave">
-                      {evento.cuando}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 truncate font-dato text-[11.5px] text-tinta-suave">
-                    {evento.objeto}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/admin/bitacora"
-              className="flex items-center justify-between border-t border-regla px-5 py-2.5 text-[13px] text-tinta-media hover:bg-lienzo hover:text-pizarra"
-            >
-              Ver la bitácora completa
-              <ArrowRight size={14} strokeWidth={1.5} />
-            </Link>
-          </Ficha>
-        </div>
       </div>
-    </div>
-  )
-}
 
-function AccionRapida({
-  icono: Icono,
-  titulo,
-  texto,
-  ruta,
-}: {
-  icono: typeof BookOpen
-  titulo: string
-  texto: string
-  ruta: string
-}) {
-  return (
-    <Link
-      to={ruta}
-      className="group flex items-start gap-3 rounded-md border border-regla bg-superficie px-4 py-3.5 transition-colors hover:border-pizarra/40 hover:bg-pizarra-tenue"
-    >
-      <Icono
-        size={18}
-        strokeWidth={1.5}
-        className="mt-0.5 shrink-0 text-tinta-suave group-hover:text-pizarra"
-      />
-      <span className="min-w-0">
-        <span className="block text-[13.5px] font-medium text-tinta">{titulo}</span>
-        <span className="mt-0.5 block text-[12px] leading-snug text-tinta-suave">
-          {texto}
-        </span>
-      </span>
-    </Link>
+      <Ficha>
+        <FichaCabecera
+          titulo="El flujo, de principio a fin"
+          descripcion="Las tres pantallas que sostienen el sistema"
+        />
+        <ol className="grid gap-px bg-regla sm:grid-cols-3">
+          {[
+            {
+              icono: BookOpen,
+              titulo: 'Crear el curso',
+              texto: 'Precio, duración, categoría, horario, instructor e imagen.',
+              ruta: '/admin/cursos',
+            },
+            {
+              icono: UserPlus,
+              titulo: 'Inscribir a alguien',
+              texto: 'Se emite matrícula y clave, y se genera el cargo del curso.',
+              ruta: '/admin/inscripciones',
+            },
+            {
+              icono: Send,
+              titulo: 'Cobrar y dar seguimiento',
+              texto: 'Pagos, abonos parciales y estado de cada inscripción.',
+              ruta: '/admin/inscripciones',
+            },
+          ].map((paso, i) => (
+            <li key={paso.titulo} className="bg-superficie px-5 py-4">
+              <span className="etiqueta-dato text-tinta-suave">Paso {i + 1}</span>
+              <p className="mt-2 flex items-center gap-2 text-[13.5px] font-medium text-tinta">
+                <paso.icono size={15} strokeWidth={1.75} className="text-pizarra" />
+                {paso.titulo}
+              </p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-tinta-suave">{paso.texto}</p>
+              <Link
+                to={paso.ruta}
+                className="mt-2 inline-block text-[12.5px] font-medium text-pizarra underline-offset-4 hover:underline"
+              >
+                Ir
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </Ficha>
+    </div>
   )
 }

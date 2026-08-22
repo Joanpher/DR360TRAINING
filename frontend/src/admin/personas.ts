@@ -25,20 +25,18 @@ export type Persona = {
   id: string
   usuarioId: string
   nombre: string
-  correo: string
+  correo: string | null
   codigo: string | null
   estado: EstadoMembresia
   roles: RolInstitucional[]
-  programaId: string | null
-  programa: string | null
-  unidadAcademicaId: string | null
-  unidad: string | null
   sedeId: string | null
   sede: string | null
   ingresoEn: string | null
   ultimoAcceso: string | null
   nuncaEntro: boolean
 }
+
+export type RolDeAlta = 'administrador' | 'coordinador' | 'docente' | 'invitado'
 
 export type ListaPersonas = {
   personas: Persona[]
@@ -61,7 +59,7 @@ export const nombreRolInstitucional: Record<RolInstitucional, string> = {
 export const queHaceCadaRol: Record<RolInstitucional, string> = {
   propietario: 'Todo, y no se le puede quitar el rol si es el único que queda.',
   administrador: 'Configura la institución, crea cursos e invita personas.',
-  coordinador: 'Gestiona los programas y cursos de su unidad académica.',
+  coordinador: 'Gestiona los cursos de su área del catálogo.',
   docente: 'Imparte cursos, publica material y califica entregas.',
   estudiante: 'Se inscribe en cursos, entrega tareas y ve sus notas.',
   invitado: 'Solo lectura acotada: auditor externo, aspirante o acudiente.',

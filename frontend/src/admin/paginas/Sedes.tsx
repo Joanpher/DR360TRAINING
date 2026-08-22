@@ -11,7 +11,7 @@ import { pedir } from '../../datos/api'
 import { useConsulta, useGuardar } from '../../datos/consulta'
 import { Pantalla } from '../Pantalla'
 import { MenuFila, Nota, PieDeTabla } from '../piezas'
-import type { Sede } from '../academico'
+import type { Sede } from '../catalogo'
 
 type Respuesta = { sedes: Sede[] }
 
@@ -24,7 +24,7 @@ type Respuesta = { sedes: Sede[] }
 */
 export function Sedes() {
   const { datos, cargando, error, recargar, fijar } = useConsulta<Respuesta>(
-    '/academico/sedes',
+    '/catalogo/sedes',
   )
   const [creando, setCreando] = useState(false)
   const [editando, setEditando] = useState<Sede | null>(null)
@@ -39,7 +39,7 @@ export function Sedes() {
   return (
     <Pantalla
       titulo="Sedes"
-      descripcion="Los recintos de la institución. Cada persona y cada unidad académica puede pertenecer a una."
+      descripcion="Los recintos de la institución. Cada curso presencial y cada persona pueden pertenecer a una."
       datos={datos}
       cargando={cargando}
       error={error}
@@ -122,7 +122,7 @@ export function Sedes() {
                                       alElegir: () => {
                                         void operar(() =>
                                           pedir<Respuesta>(
-                                            `/academico/sedes/${sede.id}/principal`,
+                                            `/catalogo/sedes/${sede.id}/principal`,
                                             { metodo: 'POST' },
                                           ),
                                         )
@@ -133,7 +133,7 @@ export function Sedes() {
                                 etiqueta: sede.activa ? 'Desactivar' : 'Reactivar',
                                 alElegir: () => {
                                   void operar(() =>
-                                    pedir<Respuesta>(`/academico/sedes/${sede.id}`, {
+                                    pedir<Respuesta>(`/catalogo/sedes/${sede.id}`, {
                                       metodo: 'PATCH',
                                       cuerpo: { activa: !sede.activa },
                                     }),
@@ -148,7 +148,7 @@ export function Sedes() {
                                       peligrosa: true,
                                       alElegir: () => {
                                         void operar(() =>
-                                          pedir<Respuesta>(`/academico/sedes/${sede.id}`, {
+                                          pedir<Respuesta>(`/catalogo/sedes/${sede.id}`, {
                                             metodo: 'DELETE',
                                           }),
                                         )
@@ -182,11 +182,11 @@ export function Sedes() {
             alEnviar={async (cuerpo) => {
               const r = await operar(() =>
                 editando
-                  ? pedir<Respuesta>(`/academico/sedes/${editando.id}`, {
+                  ? pedir<Respuesta>(`/catalogo/sedes/${editando.id}`, {
                       metodo: 'PATCH',
                       cuerpo,
                     })
-                  : pedir<Respuesta>('/academico/sedes', { metodo: 'POST', cuerpo }),
+                  : pedir<Respuesta>('/catalogo/sedes', { metodo: 'POST', cuerpo }),
               )
               if (r) {
                 setCreando(false)

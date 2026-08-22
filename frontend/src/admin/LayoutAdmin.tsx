@@ -19,7 +19,7 @@ export function LayoutAdmin() {
       <div className="flex">
         <NavegacionAdmin />
         <main className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-[1180px] px-6 py-7">
+          <div className="mx-auto w-full max-w-[1440px] px-6 py-7">
             <Outlet />
           </div>
         </main>

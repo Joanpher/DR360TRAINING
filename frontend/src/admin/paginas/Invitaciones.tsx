@@ -112,7 +112,6 @@ export function Invitaciones() {
               <Encabezado>
                 <Th>Correo</Th>
                 <Th className="w-56">Roles</Th>
-                <Th className="hidden w-44 xl:table-cell">Programa</Th>
                 <Th className="w-28">Estado</Th>
                 <Th className="w-32">Vence</Th>
                 <Th className="hidden w-40 lg:table-cell">Invitada por</Th>
@@ -124,9 +123,6 @@ export function Invitaciones() {
                     <TdDato className="text-tinta">{invitacion.correo}</TdDato>
                     <Td>
                       <RolesDePersona roles={invitacion.roles} />
-                    </Td>
-                    <Td className="hidden text-[13px] text-tinta-media xl:table-cell">
-                      {invitacion.programa ?? '—'}
                     </Td>
                     <Td>
                       <EstadoDeInvitacion estado={invitacion.estado} />

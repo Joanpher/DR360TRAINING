@@ -10,8 +10,8 @@ import {
   Video,
   type LucideIcon,
 } from 'lucide-react'
-import { cursos } from '../datos/demo'
 import { useRol, type Rol } from '../app/rol'
+import { usePortal } from '../portal/contexto'
 import { cn } from '../ui/cn'
 
 type Seccion = {
@@ -122,46 +122,48 @@ export function NavegacionPrincipal() {
 }
 
 function PanelCursos() {
+  const { cursos, cargando } = usePortal()
+
   return (
     <div className="absolute left-0 top-full z-30 w-[560px] border border-regla bg-superficie shadow-[0_12px_28px_-12px_rgba(20,23,26,0.28)] rounded-md">
       <div className="grid grid-cols-[1fr_200px]">
         <div className="border-r border-regla p-4">
           <p className="etiqueta-dato mb-3 text-tinta-suave">
-            Mis cursos · 2026-2
+            Mis cursos · {cursos.length}
           </p>
-          <ul className="space-y-0.5">
-            {cursos.slice(0, 5).map((curso) => (
-              <li key={curso.codigo}>
-                <NavLink
-                  to={`/cursos/${curso.codigo}`}
-                  className="flex items-baseline gap-3 rounded-xs px-2 py-1.5 hover:bg-lienzo"
-                >
-                  <span className="font-dato text-[12px] text-pizarra">
-                    {curso.codigo}
-                  </span>
-                  <span className="truncate text-[13px] text-tinta">
-                    {curso.asignatura}
-                  </span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+          {cargando ? (
+            <p className="px-2 py-2 text-[13px] text-tinta-suave">Cargando cursos…</p>
+          ) : cursos.length === 0 ? (
+            <p className="px-2 py-2 text-[13px] text-tinta-media">No tienes cursos asignados.</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {cursos.slice(0, 5).map((curso) => (
+                <li key={curso.id}>
+                  <NavLink
+                    to={`/cursos/${encodeURIComponent(curso.codigo)}`}
+                    className="flex items-baseline gap-3 rounded-xs px-2 py-1.5 hover:bg-lienzo"
+                  >
+                    <span className="font-dato text-[12px] text-pizarra">{curso.codigo}</span>
+                    <span className="truncate text-[13px] text-tinta">{curso.nombre}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="p-4">
           <p className="etiqueta-dato mb-3 text-tinta-suave">Ir a</p>
           <ul className="space-y-0.5 text-[13px]">
-            {['Todos los cursos', 'Inscripciones', 'Periodos académicos'].map(
-              (item) => (
-                <li key={item}>
-                  <NavLink
-                    to="/cursos"
-                    className="block rounded-xs px-2 py-1.5 text-tinta-media hover:bg-lienzo hover:text-tinta"
-                  >
-                    {item}
-                  </NavLink>
-                </li>
-              ),
-            )}
+            <li>
+              <NavLink to="/cursos" className="block rounded-xs px-2 py-1.5 text-tinta-media hover:bg-lienzo hover:text-tinta">
+                Todos los cursos
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/calendario" className="block rounded-xs px-2 py-1.5 text-tinta-media hover:bg-lienzo hover:text-tinta">
+                Mi horario
+              </NavLink>
+            </li>
           </ul>
         </div>
       </div>

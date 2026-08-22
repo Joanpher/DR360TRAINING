@@ -1,33 +1,31 @@
 import { NavLink } from 'react-router-dom'
 import {
-  BookMarked,
+  BookOpen,
   Building2,
-  CalendarRange,
-  GraduationCap,
   LayoutGrid,
   MapPin,
-  Network,
   ScrollText,
   Send,
+  Tags,
+  UserRoundCheck,
   Users,
-  Users2,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../ui/cn'
 import { useSesion } from '../app/sesion'
 import { useConsulta } from '../datos/consulta'
-import type { AnoEscolar } from './academico'
+import type { Curso } from './catalogo'
 
 /*
   Barra lateral, no pestañas horizontales. La diferencia no es estetica: el
   trabajo de administrar son decenas de pantallas agrupadas por materia, y
-  quien administra salta entre grupos todo el rato -invita a un docente, le
-  asigna un curso, revisa el periodo-. Una lista siempre visible deja ver el
-  mapa completo; una barra horizontal obligaria a esconder la mitad en menus.
+  quien administra salta entre grupos todo el rato -crea un curso, le asigna un
+  instructor, inscribe a alguien-. Una lista siempre visible deja ver el mapa
+  completo; una barra horizontal obligaria a esconder la mitad en menus.
 
-  El orden de los grupos es el orden en que se monta una institucion: primero
-  las personas, luego lo academico, y al final la configuracion que casi nunca
-  se toca.
+  El orden de los grupos es el orden en que se monta un centro: primero el
+  catalogo -sin cursos no hay nada que vender-, luego quien entra en el, y al
+  final la configuracion que casi nunca se toca.
 */
 
 type Entrada = { etiqueta: string; ruta: string; icono: LucideIcon; fin?: boolean }
@@ -39,20 +37,18 @@ const grupos: Grupo[] = [
     entradas: [{ etiqueta: 'Resumen', ruta: '/admin', icono: LayoutGrid, fin: true }],
   },
   {
-    titulo: 'Personas',
+    titulo: 'Catálogo',
     entradas: [
-      { etiqueta: 'Usuarios', ruta: '/admin/personas', icono: Users },
-      { etiqueta: 'Invitaciones', ruta: '/admin/invitaciones', icono: Send },
+      { etiqueta: 'Cursos', ruta: '/admin/cursos', icono: BookOpen },
+      { etiqueta: 'Categorías', ruta: '/admin/categorias', icono: Tags },
     ],
   },
   {
-    titulo: 'Estructura escolar',
+    titulo: 'Alumnado',
     entradas: [
-      { etiqueta: 'Año escolar', ruta: '/admin/ano-escolar', icono: CalendarRange },
-      { etiqueta: 'Grados', ruta: '/admin/grados', icono: GraduationCap },
-      { etiqueta: 'Materias', ruta: '/admin/materias', icono: BookMarked },
-      { etiqueta: 'Secciones', ruta: '/admin/secciones', icono: Users2 },
-      { etiqueta: 'Unidades académicas', ruta: '/admin/unidades', icono: Network },
+      { etiqueta: 'Inscripciones', ruta: '/admin/inscripciones', icono: UserRoundCheck },
+      { etiqueta: 'Usuarios', ruta: '/admin/personas', icono: Users },
+      { etiqueta: 'Invitaciones', ruta: '/admin/invitaciones', icono: Send },
     ],
   },
   {
@@ -69,13 +65,13 @@ export function NavegacionAdmin() {
   const { institucion } = useSesion()
 
   /*
-    El ano escolar en curso va aqui y no en cada pantalla porque es contexto, no
-    contenido: casi todo lo que se administra -secciones, cursos, inscripciones,
-    notas- solo significa algo dentro de un ano, y conviene tenerlo a la vista
-    aunque se este editando otra cosa.
+    Cuantos cursos estan disponibles va aqui y no solo en su pantalla porque es
+    contexto, no contenido: si el catalogo esta vacio no hay nada que inscribir
+    ni que cobrar, y conviene tenerlo a la vista aunque se este editando otra
+    cosa.
   */
-  const { datos } = useConsulta<{ anos: AnoEscolar[] }>('/academico/anos')
-  const anoActual = datos?.anos.find((a) => a.esActual)
+  const { datos } = useConsulta<{ cursos: Curso[] }>('/catalogo/cursos')
+  const disponibles = datos?.cursos.filter((c) => c.estado !== 'graduado').length
 
   return (
     <aside className="hidden w-[248px] shrink-0 border-r border-regla bg-superficie lg:block">
@@ -97,7 +93,9 @@ export function NavegacionAdmin() {
                 {institucion?.nombre ?? '—'}
               </p>
               <p className="mt-0.5 font-dato text-[11px] text-tinta-suave">
-                Año {anoActual?.codigo ?? 'sin abrir'}
+                {disponibles === undefined
+                  ? '—'
+                  : `${disponibles} curso${disponibles === 1 ? '' : 's'} disponible${disponibles === 1 ? '' : 's'}`}
               </p>
             </div>
           </div>

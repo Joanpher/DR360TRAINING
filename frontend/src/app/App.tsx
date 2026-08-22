@@ -26,13 +26,13 @@ import { Pendiente } from '../paginas/Pendiente'
 import { LayoutAdmin } from '../admin/LayoutAdmin'
 import { Resumen } from '../admin/paginas/Resumen'
 import { Personas } from '../admin/paginas/Personas'
+import { CrearUsuario } from '../admin/paginas/CrearUsuario'
 import { Invitaciones } from '../admin/paginas/Invitaciones'
 import { Cursos as CursosAdmin } from '../admin/paginas/Cursos'
-import { Unidades } from '../admin/paginas/Unidades'
-import { AnoEscolar } from '../admin/paginas/AnoEscolar'
-import { Grados } from '../admin/paginas/Grados'
-import { Materias } from '../admin/paginas/Materias'
-import { Secciones } from '../admin/paginas/Secciones'
+import { CrearCurso } from '../admin/paginas/CrearCurso'
+import { Categorias } from '../admin/paginas/Categorias'
+import { Inscripciones } from '../admin/paginas/Inscripciones'
+import { CrearInscripcion } from '../admin/paginas/CrearInscripcion'
 import { Sedes } from '../admin/paginas/Sedes'
 import { Institucion } from '../admin/paginas/Institucion'
 import { Bitacora } from '../admin/paginas/Bitacora'
@@ -160,13 +160,13 @@ function RutasAdmin() {
       <Route element={<LayoutAdmin />}>
         <Route path="/admin" element={<Resumen />} />
         <Route path="/admin/personas" element={<Personas />} />
+        <Route path="/admin/personas/nueva" element={<CrearUsuario />} />
         <Route path="/admin/invitaciones" element={<Invitaciones />} />
         <Route path="/admin/cursos" element={<CursosAdmin />} />
-        <Route path="/admin/unidades" element={<Unidades />} />
-        <Route path="/admin/ano-escolar" element={<AnoEscolar />} />
-        <Route path="/admin/grados" element={<Grados />} />
-        <Route path="/admin/materias" element={<Materias />} />
-        <Route path="/admin/secciones" element={<Secciones />} />
+        <Route path="/admin/cursos/nuevo" element={<CrearCurso />} />
+        <Route path="/admin/categorias" element={<Categorias />} />
+        <Route path="/admin/inscripciones" element={<Inscripciones />} />
+        <Route path="/admin/inscripciones/nueva/:cursoId" element={<CrearInscripcion />} />
         <Route path="/admin/sedes" element={<Sedes />} />
         <Route path="/admin/institucion" element={<Institucion />} />
         <Route path="/admin/bitacora" element={<Bitacora />} />

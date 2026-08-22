@@ -4,7 +4,6 @@ import { Campo } from '../ui/Campo'
 import { Dialogo } from '../ui/Dialogo'
 import { Selector } from '../ui/Selector'
 import { AreaTexto } from '../ui/AreaTexto'
-import { programas } from './datos'
 
 /*
   Invitar es la unica forma de que alguien entre a una institucion. No hay
@@ -22,7 +21,6 @@ export function DialogoInvitar({
   alCerrar: () => void
 }) {
   const [rol, setRol] = useState('estudiante')
-  const necesitaPrograma = rol === 'estudiante' || rol === 'docente' || rol === 'coordinador'
 
   return (
     <Dialogo
@@ -67,16 +65,6 @@ export function DialogoInvitar({
               : undefined
           }
         />
-
-        {necesitaPrograma && (
-          <Selector
-            etiqueta="Programa"
-            vacio="Sin programa asignado"
-            opciones={programas
-              .filter((p) => p.activo)
-              .map((p) => ({ valor: p.id, texto: p.nombre }))}
-          />
-        )}
 
         <Campo
           etiqueta={rol === 'estudiante' ? 'Matrícula' : 'Código de empleado'}

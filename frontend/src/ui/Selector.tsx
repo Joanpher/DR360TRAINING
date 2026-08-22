@@ -24,7 +24,7 @@ export function Selector({
   const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="etiqueta-dato text-tinta-media">
+      <label htmlFor={id} className="etiqueta-dato text-[11.5px] font-semibold text-tinta">
         {etiqueta}
       </label>
       <div className="relative">
