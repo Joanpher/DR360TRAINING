@@ -71,7 +71,8 @@ export function diferencias<T extends Record<string, unknown>>(
     if (valor === undefined) continue;
     const previo = antes[clave];
     // Comparacion por valor: marca y configuracion son objetos.
-    if (JSON.stringify(previo ?? null) === JSON.stringify(valor ?? null)) continue;
+    if (JSON.stringify(previo ?? null) === JSON.stringify(valor ?? null))
+      continue;
     cambios[clave] = { antes: previo ?? null, despues: valor ?? null };
   }
 

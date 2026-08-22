@@ -743,7 +743,7 @@ export function FormularioCurso({
               type="checkbox"
               checked={f.certificado}
               onChange={(e) => set('certificado', e.target.checked)}
-              className="h-4 w-4 accent-[var(--color-pizarra,#2f6f4e)]"
+              className="h-4 w-4 accent-[var(--color-pizarra,#0055fc)]"
             />
             <span className="text-[13.5px] text-tinta">Entrega certificado</span>
           </label>
@@ -905,21 +905,17 @@ async function prepararPortada(archivo: File): Promise<string> {
     const contexto = lienzo.getContext('2d')
     if (!contexto) throw new Error('El navegador no pudo preparar la imagen.')
 
-    const escala = Math.max(ancho / imagen.naturalWidth, alto / imagen.naturalHeight)
-    const origenAncho = ancho / escala
-    const origenAlto = alto / escala
-    const origenX = (imagen.naturalWidth - origenAncho) / 2
-    const origenY = (imagen.naturalHeight - origenAlto) / 2
+    contexto.fillStyle = '#f4f7fc'
+    contexto.fillRect(0, 0, ancho, alto)
+    const escala = Math.min(ancho / imagen.naturalWidth, alto / imagen.naturalHeight)
+    const destinoAncho = imagen.naturalWidth * escala
+    const destinoAlto = imagen.naturalHeight * escala
     contexto.drawImage(
       imagen,
-      origenX,
-      origenY,
-      origenAncho,
-      origenAlto,
-      0,
-      0,
-      ancho,
-      alto,
+      (ancho - destinoAncho) / 2,
+      (alto - destinoAlto) / 2,
+      destinoAncho,
+      destinoAlto,
     )
 
     const dato = lienzo.toDataURL('image/webp', 0.8)

@@ -44,14 +44,14 @@ export function SitioPublico() {
   }, [pathname])
 
   return (
-    <div className="min-h-screen bg-[#f7f8f5] text-tinta">
-      <header className="sticky top-0 z-50 border-b border-regla bg-[#f7f8f5]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[70px] max-w-[1200px] items-center px-5 sm:px-8">
-          <Link to="/" aria-label="DR360TRAINING, inicio"><Marca tono="oscuro" /></Link>
+    <div className="min-h-screen bg-lienzo text-tinta">
+      <header className="sticky top-0 z-50 border-b border-regla bg-lienzo/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[78px] max-w-[1200px] items-center px-5 sm:px-8">
+          <Link to="/" aria-label="DR360TRAINING, inicio"><Marca tono="oscuro" className="[&_img]:h-12" /></Link>
           <nav className="mx-auto hidden items-center gap-1 md:flex" aria-label="Navegación principal">
             {enlaces.map(([etiqueta, ruta]) => (
               <NavLink key={ruta} to={ruta} className={({ isActive }) => cn(
-                'relative px-4 py-2 text-[13px] font-medium transition-colors after:absolute after:inset-x-4 after:-bottom-[15px] after:h-0.5 after:transition-transform',
+                'relative px-4 py-2 text-[13px] font-medium transition-colors after:absolute after:inset-x-4 after:-bottom-[19px] after:h-0.5 after:transition-transform',
                 isActive ? 'text-pizarra after:scale-x-100 after:bg-pizarra' : 'text-tinta-media after:scale-x-0 after:bg-pizarra hover:text-tinta hover:after:scale-x-100',
               )}>{etiqueta}</NavLink>
             ))}
@@ -72,9 +72,9 @@ export function SitioPublico() {
         </div>
       </header>
       <Outlet />
-      <footer className="border-t border-white/10 bg-[#102a24] text-white">
+      <footer className="border-t border-white/10 bg-pizarra-fondo text-white">
         <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-14 sm:px-8 md:grid-cols-[1fr_auto_auto]">
-          <div><Marca tono="claro" /><p className="mt-4 max-w-sm text-sm leading-6 text-white/50">Una plataforma académica clara para instituciones que ponen el aprendizaje primero.</p></div>
+          <div><Marca tono="claro" className="[&_img]:h-10" /><p className="mt-4 max-w-sm text-sm leading-6 text-white/50">Una plataforma académica clara para instituciones que ponen el aprendizaje primero.</p></div>
           <div><p className="etiqueta-dato text-white/35">Plataforma</p><div className="mt-4 grid gap-3 text-sm text-white/60"><Link to="/producto" className="hover:text-white">Producto</Link><Link to="/soluciones" className="hover:text-white">Soluciones</Link><Link to="/seguridad" className="hover:text-white">Seguridad</Link></div></div>
           <div><p className="etiqueta-dato text-white/35">DR360TRAINING</p><div className="mt-4 grid gap-3 text-sm text-white/60"><Link to="/nosotros" className="hover:text-white">Nosotros</Link><Link to="/acceso" className="hover:text-white">Iniciar sesión</Link><Link to="/crear-cuenta" className="hover:text-white">Crear cuenta</Link></div></div>
         </div>
@@ -86,8 +86,8 @@ export function SitioPublico() {
 
 export function LlamadaFinal({ titulo, texto }: { titulo: string; texto: string }) {
   return (
-    <section className="bg-[#dce8df] px-5 py-20 sm:px-8" data-reveal>
-      <div className="mx-auto max-w-3xl text-center"><p className="etiqueta-dato text-pizarra">El siguiente paso</p><h2 className="mt-5 font-display text-3xl font-bold tracking-[-0.04em] sm:text-5xl">{titulo}</h2><p className="mx-auto mt-5 max-w-xl text-base leading-7 text-tinta-media">{texto}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/crear-cuenta" className="publico-boton inline-flex h-12 items-center justify-center gap-2 bg-pizarra px-6 text-sm font-semibold text-white">Crear mi institución <ArrowRight size={16} /></Link><Link to="/acceso" className="inline-flex h-12 items-center justify-center border border-[#9eafa2] px-6 text-sm font-semibold hover:border-tinta">Ya tengo una cuenta</Link></div></div>
+    <section className="bg-pizarra-tenue px-5 py-20 sm:px-8" data-reveal>
+      <div className="mx-auto max-w-3xl text-center"><p className="etiqueta-dato text-pizarra">El siguiente paso</p><h2 className="mt-5 font-display text-3xl font-bold tracking-[-0.04em] sm:text-5xl">{titulo}</h2><p className="mx-auto mt-5 max-w-xl text-base leading-7 text-tinta-media">{texto}</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/crear-cuenta" className="publico-boton inline-flex h-12 items-center justify-center gap-2 bg-pizarra px-6 text-sm font-semibold text-white">Crear mi institución <ArrowRight size={16} /></Link><Link to="/acceso" className="inline-flex h-12 items-center justify-center border border-regla-fuerte bg-white/55 px-6 text-sm font-semibold hover:border-pizarra hover:text-pizarra">Ya tengo una cuenta</Link></div></div>
     </section>
   )
 }

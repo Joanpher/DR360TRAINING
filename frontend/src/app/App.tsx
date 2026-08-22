@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import {
-  Calendar,
   ChartColumn,
   MessageSquare,
   UserRound,
@@ -22,6 +21,7 @@ import { Onboarding } from '../paginas/Onboarding'
 import { Inicio } from '../paginas/Inicio'
 import { Cursos } from '../paginas/Cursos'
 import { Curso } from '../paginas/Curso'
+import { Calendario } from '../paginas/Calendario'
 import { Pendiente } from '../paginas/Pendiente'
 import { LayoutAdmin } from '../admin/LayoutAdmin'
 import { Resumen } from '../admin/paginas/Resumen'
@@ -197,16 +197,7 @@ function RutasAprendizaje() {
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/cursos" element={<Cursos />} />
         <Route path="/cursos/:codigo" element={<Curso />} />
-        <Route
-          path="/calendario"
-          element={
-            <Pendiente
-              titulo="Calendario"
-              icono={Calendar}
-              texto="Reúne clases, fechas límite y eventos de la institución. No guarda datos propios: proyecta los de cursos, tareas y sesiones."
-            />
-          }
-        />
+        <Route path="/calendario" element={<Calendario />} />
         <Route
           path="/clases"
           element={

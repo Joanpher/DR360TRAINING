@@ -228,12 +228,22 @@ select set_config('app.institucion_id', :'uce_id', true);
 -- La clave foranea compuesta rechaza una referencia que cruce tenants aunque
 -- las politicas ya la hubieran ocultado. Dos redes, no una.
 select pg_temp.afirmar_falla(
-  format('insert into unidades_academicas (institucion_id, sede_id, codigo, nombre)
-          values (%L, (select id from sedes where codigo = %L), %L, %L)',
-         :'uce_id', 'SD', 'ING', 'Facultad de Ingenieria')
-    || '; update unidades_academicas set institucion_id = '
-    || quote_literal(:'pucmm_id') || ' where codigo = ' || quote_literal('ING'),
+  format('insert into categorias (institucion_id, nombre) values (%L, %L)',
+         :'uce_id', 'Idiomas')
+    || '; update categorias set institucion_id = '
+    || quote_literal(:'pucmm_id') || ' where nombre = ' || quote_literal('Idiomas'),
   'una fila no cambia de institucion');
+
+-- El contador de matriculas estuvo sin RLS desde la 0003 hasta la 0004. Sin
+-- politicas, una institucion podia leer cuantos alumnos lleva la otra y, peor,
+-- incrementarle el contador. Se comprueba por los dos lados.
+select pg_temp.afirmar(
+  (select count(*) from contadores where institucion_id = :'pucmm_id'::uuid) = 0,
+  'el contador de otra institucion no se ve');
+select pg_temp.afirmar_falla(
+  format('insert into contadores (institucion_id, clave, valor) values (%L, %L, 99)',
+         :'pucmm_id', 'matricula:2026'),
+  'no se escribe en el contador de otra institucion');
 
 select pg_temp.afirmar_falla(
   format('delete from membresia_roles where institucion_id = %L and rol = %L',

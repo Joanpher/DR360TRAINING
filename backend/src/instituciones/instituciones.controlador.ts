@@ -40,14 +40,21 @@ export class InstitucionesControlador {
 
   @Get('disponible')
   async disponible(@Actual() sesion: Sesion, @Query('slug') slug: string) {
-    return this.instituciones.slugDisponible(sesion, (slug ?? '').toLowerCase());
+    return this.instituciones.slugDisponible(
+      sesion,
+      (slug ?? '').toLowerCase(),
+    );
   }
 
   @Post()
   async crear(@Actual() sesion: Sesion, @Body() datos: CrearInstitucionDto) {
     const abierta = await this.instituciones.crear(sesion, datos);
-    const { refresco: _oculto, ...publico } = abierta;
-    return publico;
+    return {
+      acceso: abierta.acceso,
+      usuario: abierta.usuario,
+      instituciones: abierta.instituciones,
+      institucionActual: abierta.institucionActual,
+    };
   }
 
   // ---------------------------------------------------------------------------

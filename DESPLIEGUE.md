@@ -121,7 +121,7 @@ asignarselas con el usuario maestro antes de que la API arranque.
 
 - `https://TU-APP.vercel.app/api/salud` → `api: ok`, `base: ok`. Que responda
   **por el dominio de Vercel** es lo que confirma que el proxy funciona.
-- Entrar a `/admin/grados` y recargar: sigue en pie (fallback del SPA).
+- Entrar a `/admin/cursos` y recargar: sigue en pie (fallback del SPA).
 - Iniciar sesion, recargar y ver que la sesion sobrevive: la cookie de refresco
   viaja bien.
 

@@ -1,7 +1,5 @@
 import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMaxSize,
-  IsArray,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -15,7 +13,6 @@ import {
   Max,
   MaxLength,
   Min,
-  ValidateNested,
 } from 'class-validator';
 
 const recortar = () =>
@@ -30,104 +27,63 @@ const vacioEsNulo = () =>
     return limpio === '' ? null : limpio;
   });
 
-const TIPOS_DOCUMENTO = ['cedula', 'acta_nacimiento', 'pasaporte', 'otro'] as const;
-const PARENTESCOS = ['madre', 'padre', 'tutor', 'abuelo', 'hermano', 'tio', 'otro'] as const;
+const TIPOS_DOCUMENTO = [
+  'cedula',
+  'acta_nacimiento',
+  'pasaporte',
+  'otro',
+] as const;
+const ESTADOS = [
+  'preinscrita',
+  'activa',
+  'completada',
+  'retirada',
+  'cancelada',
+] as const;
 
-export class RepresentanteDto {
-  /*
-    Si ya existe en el colegio -una madre que inscribe a su segundo hijo- se
-    manda su id y no se vuelven a pedir sus datos. Esa es toda la razon de que
-    representantes sea una tabla aparte.
-  */
-  @IsOptional()
-  @IsUUID('4')
-  id?: string;
+/*
+  Inscribir tiene dos caminos y un solo DTO, porque para quien esta delante del
+  formulario es el mismo acto:
 
-  @recortar()
-  @IsString()
-  @Length(2, 80, { message: 'El nombre del representante es obligatorio.' })
-  nombres!: string;
+    · alguien nuevo    -> se manda nombres y apellidos. El sistema le crea la
+                          cuenta, le emite matricula y clave, y lo mete al curso.
+    · alguien conocido -> se manda membresiaId. Ya tiene matricula de cuando
+                          tomo su primer curso; aqui solo se le suma otro.
 
-  @recortar()
-  @IsString()
-  @Length(2, 80, { message: 'Los apellidos del representante son obligatorios.' })
-  apellidos!: string;
-
-  @IsIn(PARENTESCOS, { message: 'Parentesco no valido.' })
-  parentesco!: string;
-
-  @IsOptional()
-  @IsIn(TIPOS_DOCUMENTO)
-  tipoDocumento?: string;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(40)
-  documento?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(40)
-  telefono?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(40)
-  telefonoTrabajo?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsEmail({}, { message: 'El correo del representante no parece valido.' })
-  @MaxLength(160)
-  correo?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(300)
-  direccion?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(120)
-  ocupacion?: string | null;
-
-  @IsOptional()
-  @vacioEsNulo()
-  @IsString()
-  @MaxLength(160)
-  lugarTrabajo?: string | null;
-
-  /* Quien recibe la factura y a quien se llama primero. Uno solo por estudiante. */
-  @IsOptional()
-  @IsBoolean()
-  esPrincipal?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  puedeRetirar?: boolean;
-}
-
+  El segundo camino es la razon de que la matricula sea de la persona y no de la
+  inscripcion. Quien lleva ingles y luego contabilidad es un alumno del centro
+  con dos cursos, no dos alumnos.
+*/
 export class InscribirDto {
-  // --- Quien es el estudiante ------------------------------------------------
+  @IsUUID('4', { message: 'El curso no es valido.' })
+  cursoId!: string;
 
+  // --- Camino A: ya es alumno del centro -------------------------------------
+
+  @IsOptional()
+  @IsUUID('4', { message: 'La persona seleccionada no es valida.' })
+  membresiaId?: string;
+
+  // --- Camino B: es alguien nuevo --------------------------------------------
+
+  @IsOptional()
   @recortar()
   @IsString()
-  @Length(2, 80, { message: 'El nombre del estudiante es obligatorio.' })
-  nombres!: string;
+  @Length(2, 80, { message: 'El nombre debe tener al menos 2 caracteres.' })
+  nombres?: string;
 
+  @IsOptional()
   @recortar()
   @IsString()
-  @Length(2, 80, { message: 'Los apellidos del estudiante son obligatorios.' })
-  apellidos!: string;
+  @Length(2, 80, {
+    message: 'Los apellidos deben tener al menos 2 caracteres.',
+  })
+  apellidos?: string;
 
   /*
-    Opcional a proposito: muchos ninos de inicial no tienen correo propio, y esa
-    es justamente la razon de que la matricula sea la credencial de acceso.
+    Opcional. Un adulto que se apunta a un curso de oficios puede no tener
+    correo, y esa es justamente la razon de que la credencial de acceso sea la
+    matricula y no el buzon.
   */
   @IsOptional()
   @vacioEsNulo()
@@ -147,7 +103,9 @@ export class InscribirDto {
 
   @IsOptional()
   @vacioEsNulo()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha de nacimiento no es valida.' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'La fecha de nacimiento no es valida.',
+  })
   fechaNacimiento?: string | null;
 
   @IsOptional()
@@ -155,16 +113,10 @@ export class InscribirDto {
   sexo?: string | null;
 
   @IsOptional()
-  @recortar()
-  @IsString()
-  @MaxLength(60)
-  nacionalidad?: string;
-
-  @IsOptional()
   @vacioEsNulo()
   @IsString()
-  @MaxLength(120)
-  lugarNacimiento?: string | null;
+  @MaxLength(40)
+  telefono?: string | null;
 
   @IsOptional()
   @vacioEsNulo()
@@ -175,66 +127,68 @@ export class InscribirDto {
   @IsOptional()
   @vacioEsNulo()
   @IsString()
-  @MaxLength(40)
-  telefonoCasa?: string | null;
+  @MaxLength(120)
+  ocupacion?: string | null;
 
   @IsOptional()
   @vacioEsNulo()
   @IsString()
-  @MaxLength(8)
-  tipoSangre?: string | null;
+  @MaxLength(160)
+  empresa?: string | null;
 
-  @IsOptional() @vacioEsNulo() @IsString() @MaxLength(500)
-  condicionesMedicas?: string | null;
+  @IsOptional()
+  @vacioEsNulo()
+  @IsString()
+  @MaxLength(120)
+  comoNosConocio?: string | null;
 
-  @IsOptional() @vacioEsNulo() @IsString() @MaxLength(500)
-  alergias?: string | null;
+  @IsOptional()
+  @vacioEsNulo()
+  @IsString()
+  @MaxLength(500)
+  notas?: string | null;
 
-  @IsOptional() @vacioEsNulo() @IsString() @MaxLength(160)
-  colegioProcedencia?: string | null;
+  // --- Condiciones de la inscripcion -----------------------------------------
 
-  @IsOptional() @vacioEsNulo() @IsString() @MaxLength(500)
-  observaciones?: string | null;
+  @IsOptional()
+  @IsIn(['preinscrita', 'activa'], {
+    message: 'Una inscripcion nace preinscrita o activa.',
+  })
+  estado?: string;
 
-  // --- Donde entra -----------------------------------------------------------
-
-  @IsUUID('4', { message: 'La seccion no es valida.' })
-  seccionId!: string;
-
-  // --- Quien responde por el -------------------------------------------------
-
-  @IsArray()
-  @ArrayMaxSize(4)
-  @ValidateNested({ each: true })
-  @Type(() => RepresentanteDto)
-  representantes!: RepresentanteDto[];
-
-  // --- Que se le cobra -------------------------------------------------------
+  /* Beca, promocion o acuerdo. Nunca mas que el precio del curso. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El descuento no es valido.' })
+  @Min(0)
+  descuento?: number;
 
   /*
-    Que conceptos se le generan. Si no viene, se aplican los obligatorios del
-    ano escolar. Se deja elegir porque un colegio perdona la inscripcion a un
-    hermano o a una beca, y eso no puede obligar a borrar el cargo despues.
+    Para cortesias e intercambios: se inscribe sin generar el cargo. No es lo
+    mismo que un descuento del 100%, que si deja rastro de cuanto se perdono.
   */
   @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(20)
-  @IsUUID('4', { each: true })
-  conceptos?: string[];
+  @IsBoolean()
+  sinCobro?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  sinCobros?: boolean;
+  @vacioEsNulo()
+  @IsString()
+  @MaxLength(500)
+  observaciones?: string | null;
 }
 
 export class ActualizarInscripcionDto {
   @IsOptional()
-  @IsUUID('4')
-  seccionId?: string;
+  @IsIn(ESTADOS, { message: 'Ese estado no existe.' })
+  estado?: string;
 
   @IsOptional()
-  @IsIn(['preinscrito', 'inscrito', 'retirado', 'promovido', 'repitente'])
-  estado?: string;
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  calificacion?: number | null;
 
   @IsOptional()
   @vacioEsNulo()
@@ -252,15 +206,19 @@ export class ActualizarInscripcionDto {
 export class ListarInscripcionesDto {
   @IsOptional()
   @IsUUID('4')
-  anoEscolarId?: string;
+  cursoId?: string;
 
   @IsOptional()
-  @IsUUID('4')
-  seccionId?: string;
-
-  @IsOptional()
-  @IsIn(['preinscrito', 'inscrito', 'retirado', 'promovido', 'repitente'])
+  @IsIn(ESTADOS)
   estado?: string;
+
+  /* Solo las que deben algo. Es la vista que pide quien cobra. */
+  @IsOptional()
+  @Transform(
+    ({ value }: { value: unknown }) => value === 'true' || value === true,
+  )
+  @IsBoolean()
+  conDeuda?: boolean;
 
   @IsOptional()
   @recortar()
@@ -283,52 +241,33 @@ export class ListarInscripcionesDto {
 }
 
 // ---------------------------------------------------------------------------
-// Conceptos de cobro
+// Cobro
 // ---------------------------------------------------------------------------
 
-export class ConceptoDto {
-  @IsOptional()
-  @IsUUID('4')
-  anoEscolarId?: string | null;
-
+/* Un cargo suelto: material, repeticion de examen, certificado impreso. */
+export class CargoDto {
   @recortar()
   @IsString()
-  @Length(2, 120)
-  nombre!: string;
+  @Length(2, 200, { message: 'El cargo necesita una descripcion.' })
+  descripcion!: string;
 
-  @IsIn(['inscripcion', 'mensualidad', 'material', 'uniforme', 'actividad', 'otro'])
-  tipo!: string;
-
+  @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El monto no es valido.' })
   @Min(0)
   monto!: number;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(12)
-  cuotas?: number | null;
-
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(28)
-  diaVencimiento?: number | null;
-
-  @IsOptional()
-  @IsBoolean()
-  obligatorio?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  activo?: boolean;
+  @vacioEsNulo()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'La fecha de vencimiento no es valida.',
+  })
+  venceEn?: string | null;
 }
 
 export class RegistrarPagoDto {
+  @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El monto no es valido.' })
-  @Min(0.01)
+  @Min(0.01, { message: 'Un pago tiene que ser mayor que cero.' })
   monto!: number;
 
   @IsIn(['efectivo', 'transferencia', 'cheque', 'tarjeta', 'otro'])
@@ -342,7 +281,9 @@ export class RegistrarPagoDto {
 
   @IsOptional()
   @vacioEsNulo()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha del pago no es valida.' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'La fecha del pago no es valida.',
+  })
   recibidoEn?: string | null;
 
   @IsOptional()

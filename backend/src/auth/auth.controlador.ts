@@ -30,7 +30,11 @@ export class AuthControlador {
     @Req() peticion: Request,
     @Res({ passthrough: true }) respuesta: Response,
   ) {
-    const sesion = await this.auth.registrar(datos, this.ip(peticion), this.agente(peticion));
+    const sesion = await this.auth.registrar(
+      datos,
+      this.ip(peticion),
+      this.agente(peticion),
+    );
     return this.responder(sesion, respuesta);
   }
 
@@ -42,7 +46,11 @@ export class AuthControlador {
     @Req() peticion: Request,
     @Res({ passthrough: true }) respuesta: Response,
   ) {
-    const sesion = await this.auth.entrar(datos, this.ip(peticion), this.agente(peticion));
+    const sesion = await this.auth.entrar(
+      datos,
+      this.ip(peticion),
+      this.agente(peticion),
+    );
     return this.responder(sesion, respuesta);
   }
 
@@ -88,7 +96,10 @@ export class AuthControlador {
     @Body() datos: ElegirInstitucionDto,
     @Res({ passthrough: true }) respuesta: Response,
   ) {
-    const abierta = await this.auth.elegirInstitucion(sesion, datos.institucionId);
+    const abierta = await this.auth.elegirInstitucion(
+      sesion,
+      datos.institucionId,
+    );
     return this.responder(abierta, respuesta);
   }
 
@@ -111,8 +122,12 @@ export class AuthControlador {
       );
     }
 
-    const { refresco: _oculto, ...publico } = sesion;
-    return publico;
+    return {
+      acceso: sesion.acceso,
+      usuario: sesion.usuario,
+      instituciones: sesion.instituciones,
+      institucionActual: sesion.institucionActual,
+    };
   }
 
   private opcionesCookie(maxEdad: number) {
@@ -127,7 +142,9 @@ export class AuthControlador {
   }
 
   private leerCookie(peticion: Request): string | undefined {
-    return (peticion.cookies as Record<string, string> | undefined)?.[COOKIE_REFRESCO];
+    return (peticion.cookies as Record<string, string> | undefined)?.[
+      COOKIE_REFRESCO
+    ];
   }
 
   private ip(peticion: Request): string {

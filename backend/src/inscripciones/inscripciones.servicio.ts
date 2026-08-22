@@ -11,42 +11,67 @@ import { hashearContrasena } from '../auth/contrasenas';
 import { anotar, type Origen } from '../comun/auditoria';
 import { contextoDe, institucionDe } from '../comun/contexto';
 import type { Sesion } from '../comun/sesion';
-import type { InscribirDto, RepresentanteDto } from './dto/inscripciones.dto';
+import type {
+  ActualizarInscripcionDto,
+  InscribirDto,
+} from './dto/inscripciones.dto';
 
 export type Inscripcion = {
   id: string;
+  cursoId: string;
+  curso: string;
+  codigoCurso: string;
   membresiaId: string;
-  matricula: string;
+  matricula: string | null;
   nombre: string;
-  estado: string;
-  seccionId: string;
-  seccion: string;
-  grado: string;
-  anoEscolarId: string;
-  ano: string;
-  inscritoEn: string;
-  cursos: number;
-  representante: string | null;
+  correo: string | null;
   telefono: string | null;
+  estado: string;
+  inscritoEn: string;
+  precio: string;
+  descuento: string;
+  total: string;
+  facturado: string;
+  pagado: string;
   deuda: string;
+  calificacion: string | null;
+  completadoEn: string | null;
+};
+
+/* Lo que el centro guarda de la persona, mas alla de su nombre y su correo. */
+export type Ficha = {
+  tipoDocumento: string;
+  documento: string | null;
+  fechaNacimiento: string | null;
+  sexo: string | null;
+  telefono: string | null;
+  direccion: string | null;
+  ocupacion: string | null;
+  empresa: string | null;
+  comoNosConocio: string | null;
+  notas: string | null;
 };
 
 export type ResultadoInscripcion = {
   inscripcion: Inscripcion;
   /*
-    La clave en claro. Es la unica vez que existe fuera del hash: se entrega a
-    la secretaria para que la imprima o se la diga a la familia, y no se puede
-    volver a consultar. Si se pierde, se genera otra.
+    La clave en claro, y solo cuando la persona es nueva. Es la unica vez que
+    existe fuera del hash: se entrega a la secretaria para que la imprima o la
+    dicte, y no se puede volver a consultar. Si se pierde, se genera otra.
+
+    Null cuando se inscribe a alguien que ya era alumno del centro: esa persona
+    ya tiene su clave y cambiarsela por apuntarse a otro curso seria hostil.
   */
-  clave: string;
-  cursosAsignados: number;
-  cargosGenerados: number;
+  clave: string | null;
+  matricula: string | null;
+  esPersonaNueva: boolean;
+  cargoGenerado: boolean;
 };
 
 /*
   Alfabeto sin caracteres que se confunden al leer una clave escrita a mano:
-  fuera 0/O, 1/l/I, 5/S, 8/B. La clave se dicta por telefono a una madre; que
-  sea legible importa mas que un bit extra de entropia.
+  fuera 0/O, 1/l/I, 5/S, 8/B. La clave se dicta por telefono; que sea legible
+  importa mas que un bit extra de entropia.
 */
 const ALFABETO = 'ACDEFGHJKMNPQRTUVWXY2346789';
 
@@ -56,38 +81,50 @@ function generarClave(largo = 10): string {
   return clave;
 }
 
+/*
+  Los montos viajan como texto, no como number.
+
+  numeric(12,2) en Postgres tiene mas precision que el double de JavaScript, y
+  convertirlo a number para volver a serializarlo es donde aparecen los 1499.99
+  que deberian ser 1500.00. El navegador lo formatea para mostrarlo y lo manda
+  de vuelta como numero solo cuando alguien escribe una cifra nueva.
+
+  La cuenta de cada inscripcion se calcula en la base con un lateral y no en
+  TypeScript sumando filas: sumar numeric en Postgres es exacto, sumar su
+  equivalente en coma flotante no. Los cargos anulados y los condonados quedan
+  fuera del facturado a proposito: siguen existiendo como historia, pero ya no
+  se deben.
+*/
 const LISTA = `
-  select i.id, i.membresia_id as "membresiaId", m.codigo as matricula,
-         u.nombre_completo as nombre, i.estado::text as estado,
-         i.seccion_id as "seccionId",
-         (g.nombre || ' ' || s.nombre) as seccion, g.nombre as grado,
-         i.ano_escolar_id as "anoEscolarId", a.codigo as ano,
+  select i.id, i.curso_id as "cursoId", c.nombre as curso, c.codigo as "codigoCurso",
+         i.membresia_id as "membresiaId", m.codigo as matricula,
+         u.nombre_completo as nombre, u.correo::text as correo, p.telefono,
+         i.estado::text as estado,
          to_char(i.inscrito_en, 'YYYY-MM-DD') as "inscritoEn",
-         (select count(*)::int from curso_estudiantes ce
-           where ce.inscripcion_id = i.id and ce.retirado_en is null) as cursos,
-         (select r.nombre_completo
-            from estudiante_representantes er
-            join representantes r on r.id = er.representante_id
-           where er.membresia_id = i.membresia_id and er.es_principal
-           limit 1) as representante,
-         (select r.telefono
-            from estudiante_representantes er
-            join representantes r on r.id = er.representante_id
-           where er.membresia_id = i.membresia_id and er.es_principal
-           limit 1) as telefono,
-         coalesce((
-           select sum(c.monto) - coalesce(sum(
-                    (select sum(p.monto) from pagos p
-                      where p.cargo_id = c.id and p.anulado_en is null)), 0)
-             from cargos c
-            where c.inscripcion_id = i.id and c.estado = 'pendiente'
-         ), 0)::text as deuda
+         i.precio::text as precio, i.descuento::text as descuento,
+         (i.precio - i.descuento)::text as total,
+         cuenta.facturado::text as facturado,
+         cuenta.pagado::text as pagado,
+         (cuenta.facturado - cuenta.pagado)::text as deuda,
+         i.calificacion::text as calificacion,
+         to_char(i.completado_en, 'YYYY-MM-DD') as "completadoEn"
     from inscripciones i
+    join cursos c on c.id = i.curso_id
     join membresias m on m.id = i.membresia_id
     join usuarios u on u.id = m.usuario_id
-    join secciones s on s.id = i.seccion_id
-    join grados g on g.id = s.grado_id
-    join anos_escolares a on a.id = i.ano_escolar_id
+    left join participantes p on p.membresia_id = i.membresia_id
+    left join lateral (
+      select coalesce(sum(x.monto), 0) as facturado,
+             coalesce(sum(x.pagado), 0) as pagado
+        from (
+          select g.monto,
+                 coalesce((select sum(pg.monto) from pagos pg
+                            where pg.cargo_id = g.id and pg.anulado_en is null), 0) as pagado
+            from cargos g
+           where g.inscripcion_id = i.id
+             and g.estado in ('pendiente', 'pagado')
+        ) x
+    ) cuenta on true
 `;
 
 @Injectable()
@@ -102,19 +139,17 @@ export class InscripcionesServicio {
   /*
     El acto completo, en una sola transaccion salvo la clave:
 
-      persona -> membresia con matricula -> expediente -> representantes
-      -> inscripcion en la seccion -> alta en todos sus cursos -> cargos
+      persona -> membresia con matricula -> ficha -> inscripcion -> cargo
 
-    Que vaya todo junto no es comodidad: una inscripcion a medias -un nino con
-    matricula pero sin cursos, o con cursos pero sin cargo de inscripcion- es
-    justo el estado que nadie descubre hasta que pasa algo raro dos meses
-    despues.
+    Que vaya todo junto no es comodidad: una inscripcion a medias -alguien con
+    matricula pero sin curso, o en el curso pero sin cargo- es justo el estado
+    que nadie descubre hasta que pasa algo raro dos meses despues.
 
     La clave es la excepcion y va aparte. El rol de negocio no tiene permiso de
     escritura sobre usuarios.hash_contrasena -solo el de identidad lo tiene- y
     eso es deliberado: mantiene la superficie de escritura de contrasenas en un
     solo modulo. El orden elegido hace que el fallo sea benigno: si la clave no
-    llega a ponerse, el estudiante queda inscrito y sin poder entrar, que se
+    llega a ponerse, la persona queda inscrita y sin poder entrar, que se
     arregla regenerandola, en vez de quedar un usuario huerfano sin membresia.
   */
   async inscribir(
@@ -122,161 +157,135 @@ export class InscripcionesServicio {
     datos: InscribirDto,
     origen: Origen,
   ): Promise<ResultadoInscripcion> {
+    const esPersonaNueva = !datos.membresiaId;
+
+    if (esPersonaNueva && (!datos.nombres || !datos.apellidos)) {
+      throw new BadRequestException(
+        'Elige a alguien que ya sea alumno del centro o escribe el nombre y los apellidos de quien entra.',
+      );
+    }
+
     const institucionId = institucionDe(sesion);
-    const clave = generarClave();
+    const clave = esPersonaNueva ? generarClave() : null;
 
-    const resultado = await this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const seccion = await this.leerSeccionParaInscribir(cliente, datos.seccionId);
+    const resultado = await this.bd.conContexto(
+      contextoDe(sesion),
+      async (cliente) => {
+        const curso = await this.leerCursoParaInscribir(cliente, datos.cursoId);
 
-      const { rows: siglas } = await cliente.query<{ siglas: string | null }>(
-        `select siglas from instituciones where id = $1`,
-        [institucionId],
-      );
-
-      const matricula = await this.siguienteMatricula(
-        cliente,
-        institucionId,
-        siglas[0]?.siglas,
-        seccion.anoCodigo,
-      );
-
-      // --- La persona --------------------------------------------------------
-      const { rows: usuario } = await cliente.query<{ id: string }>(
-        `insert into usuarios (correo, nombres, apellidos, estado)
-         values ($1::citext, $2, $3, 'activo')
-         returning id`,
-        [datos.correo ?? null, datos.nombres, datos.apellidos],
-      );
-      const usuarioId = usuario[0].id;
-
-      // --- Su membresia en este colegio --------------------------------------
-      const { rows: membresia } = await cliente.query<{ id: string }>(
-        `insert into membresias
-           (institucion_id, usuario_id, codigo, estado, sede_id, ingreso_en)
-         values ($1, $2, $3, 'activa', $4, current_date)
-         returning id`,
-        [institucionId, usuarioId, matricula, seccion.sedeId],
-      );
-      const membresiaId = membresia[0].id;
-
-      await cliente.query(
-        `insert into membresia_roles (membresia_id, institucion_id, rol, asignado_por)
-         values ($1, $2, 'estudiante', $3)`,
-        [membresiaId, institucionId, sesion.usuarioId],
-      );
-
-      // --- Su expediente -----------------------------------------------------
-      await cliente.query(
-        `insert into estudiantes
-           (membresia_id, institucion_id, tipo_documento, documento, fecha_nacimiento,
-            sexo, nacionalidad, lugar_nacimiento, direccion, telefono_casa,
-            tipo_sangre, condiciones_medicas, alergias, colegio_procedencia,
-            observaciones)
-         values ($1, $2, $3::tipo_documento, $4, $5::date, $6::sexo_persona, $7, $8,
-                 $9, $10, $11, $12, $13, $14, $15)`,
-        [
-          membresiaId,
-          institucionId,
-          datos.tipoDocumento ?? 'acta_nacimiento',
-          datos.documento ?? null,
-          datos.fechaNacimiento ?? null,
-          datos.sexo ?? null,
-          datos.nacionalidad ?? 'Dominicana',
-          datos.lugarNacimiento ?? null,
-          datos.direccion ?? null,
-          datos.telefonoCasa ?? null,
-          datos.tipoSangre ?? null,
-          datos.condicionesMedicas ?? null,
-          datos.alergias ?? null,
-          datos.colegioProcedencia ?? null,
-          datos.observaciones ?? null,
-        ],
-      );
-
-      await this.enlazarRepresentantes(
-        cliente,
-        institucionId,
-        membresiaId,
-        datos.representantes,
-      );
-
-      // --- La inscripcion ----------------------------------------------------
-      const { rows: inscripcion } = await cliente.query<{ id: string }>(
-        `insert into inscripciones
-           (institucion_id, ano_escolar_id, membresia_id, seccion_id, estado)
-         values ($1, $2, $3, $4, 'inscrito')
-         returning id`,
-        [institucionId, seccion.anoEscolarId, membresiaId, datos.seccionId],
-      );
-      const inscripcionId = inscripcion[0].id;
-
-      const cursosAsignados = await this.matricularEnCursos(
-        cliente,
-        institucionId,
-        inscripcionId,
-        datos.seccionId,
-      );
-
-      const cargosGenerados = datos.sinCobros
-        ? 0
-        : await this.generarCargos(
-            cliente,
-            institucionId,
-            inscripcionId,
-            seccion.anoEscolarId,
-            seccion.anoInicio,
-            datos.conceptos,
+        const descuento = datos.descuento ?? 0;
+        if (descuento > Number(curso.precio)) {
+          throw new BadRequestException(
+            `El descuento no puede pasar del precio del curso (${curso.precio}).`,
           );
+        }
 
-      await anotar(
-        cliente,
-        {
-          accion: 'estudiante.inscrito',
-          entidad: 'inscripciones',
-          entidadId: inscripcionId,
-          datos: {
-            matricula,
-            nombre: `${datos.nombres} ${datos.apellidos}`,
-            seccion: `${seccion.grado} ${seccion.nombre}`,
-            ano: seccion.anoCodigo,
-            cursosAsignados,
-            cargosGenerados,
+        let membresiaId: string;
+        let usuarioId: string | null = null;
+        let matricula: string | null = null;
+
+        if (datos.membresiaId) {
+          const alumno = await this.leerAlumno(cliente, datos.membresiaId);
+          membresiaId = datos.membresiaId;
+          matricula = alumno.matricula;
+        } else {
+          const nuevo = await this.crearPersona(cliente, institucionId, datos);
+          membresiaId = nuevo.membresiaId;
+          usuarioId = nuevo.usuarioId;
+          matricula = nuevo.matricula;
+        }
+
+        const { rows: inscripcion } = await cliente.query<{ id: string }>(
+          `insert into inscripciones
+           (institucion_id, curso_id, membresia_id, estado, precio, descuento, observaciones)
+         values ($1, $2, $3, $4::estado_inscripcion, $5::numeric, $6::numeric, $7)
+         returning id`,
+          [
+            institucionId,
+            datos.cursoId,
+            membresiaId,
+            datos.estado ?? 'activa',
+            curso.precio,
+            descuento,
+            datos.observaciones ?? null,
+          ],
+        );
+        const inscripcionId = inscripcion[0].id;
+
+        const total = Number(curso.precio) - descuento;
+        const cargoGenerado = !datos.sinCobro && total > 0;
+
+        if (cargoGenerado) {
+          await cliente.query(
+            `insert into cargos
+             (institucion_id, inscripcion_id, descripcion, monto, vence_en)
+           values ($1, $2, $3, $4::numeric, $5::date)`,
+            [
+              institucionId,
+              inscripcionId,
+              `${curso.codigo} · ${curso.nombre}`,
+              total.toFixed(2),
+              // Vence el dia que empieza el curso, o el mismo dia si ya empezo o
+              // no tiene fecha. Cobrar despues de que la clase arranco es como se
+              // acumulan las deudas que nadie reclama.
+              curso.iniciaEn,
+            ],
+          );
+        }
+
+        await anotar(
+          cliente,
+          {
+            accion: 'inscripcion.creada',
+            entidad: 'inscripciones',
+            entidadId: inscripcionId,
+            datos: {
+              curso: `${curso.codigo} ${curso.nombre}`,
+              matricula,
+              personaNueva: esPersonaNueva,
+              precio: curso.precio,
+              descuento: descuento.toFixed(2),
+              cargoGenerado,
+            },
           },
-        },
-        origen,
-      );
+          origen,
+        );
 
-      const { rows } = await cliente.query<Inscripcion>(`${LISTA} where i.id = $1`, [
-        inscripcionId,
-      ]);
+        const { rows } = await cliente.query<Inscripcion>(
+          `${LISTA} where i.id = $1`,
+          [inscripcionId],
+        );
 
-      return { inscripcion: rows[0], usuarioId, cursosAsignados, cargosGenerados };
-    });
+        return { inscripcion: rows[0], usuarioId, matricula, cargoGenerado };
+      },
+    );
 
     // La clave, en su propia transaccion y con el rol de identidad.
-    const hash = await hashearContrasena(clave);
-    await this.bd.conIdentidad((cliente) =>
-      cliente.query(`update usuarios set hash_contrasena = $2 where id = $1`, [
-        resultado.usuarioId,
-        hash,
-      ]),
-    );
-
-    this.bitacora.log(
-      `Matricula ${resultado.inscripcion.matricula} emitida por ${sesion.correo}`,
-    );
+    if (clave && resultado.usuarioId) {
+      const hash = await hashearContrasena(clave);
+      await this.bd.conIdentidad((cliente) =>
+        cliente.query(
+          `update usuarios set hash_contrasena = $2 where id = $1`,
+          [resultado.usuarioId, hash],
+        ),
+      );
+      this.bitacora.log(
+        `Matricula ${resultado.matricula} emitida por ${sesion.correo}`,
+      );
+    }
 
     return {
       inscripcion: resultado.inscripcion,
       clave,
-      cursosAsignados: resultado.cursosAsignados,
-      cargosGenerados: resultado.cargosGenerados,
+      matricula: resultado.matricula,
+      esPersonaNueva,
+      cargoGenerado: resultado.cargoGenerado,
     };
   }
 
   /*
-    Vuelve a emitir la clave de un estudiante. Se usa cuando la familia la
-    pierde, que ocurre constantemente. La anterior deja de servir en el acto.
+    Vuelve a emitir la clave de un alumno. Se usa cuando se pierde, que ocurre
+    constantemente. La anterior deja de servir en el acto.
   */
   async regenerarClave(sesion: Sesion, inscripcionId: string, origen: Origen) {
     const clave = generarClave();
@@ -286,7 +295,7 @@ export class InscripcionesServicio {
       async (cliente) => {
         const { rows } = await cliente.query<{
           usuarioId: string;
-          matricula: string;
+          matricula: string | null;
           nombre: string;
         }>(
           `select m.usuario_id as "usuarioId", m.codigo as matricula,
@@ -302,7 +311,7 @@ export class InscripcionesServicio {
         await anotar(
           cliente,
           {
-            accion: 'estudiante.clave_regenerada',
+            accion: 'alumno.clave_regenerada',
             entidad: 'inscripciones',
             entidadId: inscripcionId,
             datos: { matricula: rows[0].matricula, nombre: rows[0].nombre },
@@ -341,9 +350,9 @@ export class InscripcionesServicio {
   async listar(
     sesion: Sesion,
     filtros: {
-      anoEscolarId?: string;
-      seccionId?: string;
+      cursoId?: string;
       estado?: string;
+      conDeuda?: boolean;
       busqueda?: string;
       pagina?: number;
       porPagina?: number;
@@ -355,13 +364,9 @@ export class InscripcionesServicio {
     const condiciones: string[] = [];
     const valores: unknown[] = [];
 
-    if (filtros.anoEscolarId) {
-      valores.push(filtros.anoEscolarId);
-      condiciones.push(`i.ano_escolar_id = $${valores.length}`);
-    }
-    if (filtros.seccionId) {
-      valores.push(filtros.seccionId);
-      condiciones.push(`i.seccion_id = $${valores.length}`);
+    if (filtros.cursoId) {
+      valores.push(filtros.cursoId);
+      condiciones.push(`i.curso_id = $${valores.length}`);
     }
     if (filtros.estado) {
       valores.push(filtros.estado);
@@ -370,23 +375,31 @@ export class InscripcionesServicio {
     if (filtros.busqueda) {
       valores.push(`%${filtros.busqueda}%`);
       const n = valores.length;
-      condiciones.push(`(u.nombre_completo ilike $${n} or m.codigo ilike $${n})`);
+      condiciones.push(
+        `(u.nombre_completo ilike $${n} or m.codigo ilike $${n} or c.nombre ilike $${n})`,
+      );
+    }
+    if (filtros.conDeuda) {
+      condiciones.push(`cuenta.facturado > cuenta.pagado`);
     }
 
-    const donde = condiciones.length ? `where ${condiciones.join(' and ')}` : '';
+    const donde = condiciones.length
+      ? `where ${condiciones.join(' and ')}`
+      : '';
 
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
+      /*
+        El total se cuenta sobre la misma consulta y no sobre un from mas corto:
+        el filtro de deuda vive en el lateral, asi que un count que no lo
+        incluyera devolveria un numero distinto del que se esta paginando.
+      */
       const { rows: total } = await cliente.query<{ total: number }>(
-        `select count(*)::int as total
-           from inscripciones i
-           join membresias m on m.id = i.membresia_id
-           join usuarios u on u.id = m.usuario_id
-         ${donde}`,
+        `select count(*)::int as total from (${LISTA} ${donde}) t`,
         valores,
       );
 
       const { rows: inscripciones } = await cliente.query<Inscripcion>(
-        `${LISTA} ${donde} order by g.nivel, g.orden, s.nombre, u.nombre_completo
+        `${LISTA} ${donde} order by i.inscrito_en desc, u.nombre_completo
           limit $${valores.length + 1} offset $${valores.length + 2}`,
         [...valores, porPagina, (pagina - 1) * porPagina],
       );
@@ -395,73 +408,149 @@ export class InscripcionesServicio {
     });
   }
 
-  /* El expediente completo: quien es, quien responde por el y que debe. */
+  /* La ficha completa: quien es, que lleva y que debe. */
   async detalle(sesion: Sesion, id: string) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const { rows } = await cliente.query<Inscripcion>(`${LISTA} where i.id = $1`, [id]);
+      const { rows } = await cliente.query<Inscripcion>(
+        `${LISTA} where i.id = $1`,
+        [id],
+      );
       if (!rows[0]) throw new NotFoundException('Esa inscripcion no existe.');
 
-      const { rows: expediente } = await cliente.query(
-        `select e.tipo_documento::text as "tipoDocumento", e.documento,
-                to_char(e.fecha_nacimiento, 'YYYY-MM-DD') as "fechaNacimiento",
-                e.sexo::text as sexo, e.nacionalidad, e.lugar_nacimiento as "lugarNacimiento",
-                e.direccion, e.telefono_casa as "telefonoCasa", e.tipo_sangre as "tipoSangre",
-                e.condiciones_medicas as "condicionesMedicas", e.alergias,
-                e.colegio_procedencia as "colegioProcedencia", e.observaciones,
-                u.correo::text as correo
-           from estudiantes e
-           join membresias m on m.id = e.membresia_id
-           join usuarios u on u.id = m.usuario_id
-          where e.membresia_id = $1`,
+      const { rows: ficha } = await cliente.query<Ficha>(
+        `select p.tipo_documento::text as "tipoDocumento", p.documento,
+                to_char(p.fecha_nacimiento, 'YYYY-MM-DD') as "fechaNacimiento",
+                p.sexo::text as sexo, p.telefono, p.direccion, p.ocupacion,
+                p.empresa, p.como_nos_conocio as "comoNosConocio", p.notas
+           from participantes p
+          where p.membresia_id = $1`,
         [rows[0].membresiaId],
       );
 
-      const { rows: representantes } = await cliente.query(
-        `select r.id, r.nombres, r.apellidos, r.nombre_completo as "nombreCompleto",
-                r.documento, r.telefono, r.telefono_trabajo as "telefonoTrabajo",
-                r.correo::text as correo, r.direccion, r.ocupacion,
-                r.lugar_trabajo as "lugarTrabajo",
-                er.parentesco::text as parentesco, er.es_principal as "esPrincipal",
-                er.puede_retirar as "puedeRetirar"
-           from estudiante_representantes er
-           join representantes r on r.id = er.representante_id
-          where er.membresia_id = $1
-          order by er.es_principal desc, r.nombre_completo`,
-        [rows[0].membresiaId],
-      );
-
-      const { rows: cursos } = await cliente.query(
-        `select c.id, a.codigo as "codigoAsignatura", a.nombre as asignatura,
-                ud.nombre_completo as docente, c.estado::text as estado
-           from curso_estudiantes ce
-           join cursos c on c.id = ce.curso_id
-           join asignaturas a on a.id = c.asignatura_id
-           left join membresias md on md.id = c.docente_membresia_id
-           left join usuarios ud on ud.id = md.usuario_id
-          where ce.inscripcion_id = $1 and ce.retirado_en is null
-          order by a.nombre`,
-        [id],
+      /* Los otros cursos de la misma persona. Es lo primero que se pregunta
+         cuando alguien llama: "que mas ha llevado aqui". */
+      const { rows: otrosCursos } = await cliente.query(
+        `select i.id, c.codigo, c.nombre, i.estado::text as estado,
+                to_char(i.inscrito_en, 'YYYY-MM-DD') as "inscritoEn"
+           from inscripciones i
+           join cursos c on c.id = i.curso_id
+          where i.membresia_id = $1 and i.id <> $2
+          order by i.inscrito_en desc`,
+        [rows[0].membresiaId, id],
       );
 
       const { rows: cargos } = await cliente.query(
-        `select c.id, c.descripcion, c.monto::text as monto, c.cuota,
-                to_char(c.vence_en, 'YYYY-MM-DD') as "venceEn",
-                c.estado::text as estado,
+        `select g.id, g.descripcion, g.monto::text as monto,
+                to_char(g.vence_en, 'YYYY-MM-DD') as "venceEn",
+                g.estado::text as estado, g.motivo,
                 coalesce((select sum(p.monto) from pagos p
-                           where p.cargo_id = c.id and p.anulado_en is null), 0)::text as pagado
-           from cargos c
-          where c.inscripcion_id = $1
-          order by c.cuota nulls first, c.vence_en`,
+                           where p.cargo_id = g.id and p.anulado_en is null), 0)::text as pagado
+           from cargos g
+          where g.inscripcion_id = $1
+          order by g.creado_en`,
+        [id],
+      );
+
+      const { rows: pagos } = await cliente.query(
+        `select p.id, p.cargo_id as "cargoId", p.monto::text as monto,
+                p.metodo::text as metodo, p.referencia,
+                to_char(p.recibido_en, 'YYYY-MM-DD') as "recibidoEn",
+                p.nota, p.anulado_en is not null as anulado,
+                u.nombre_completo as "registradoPor"
+           from pagos p
+           join cargos g on g.id = p.cargo_id
+           left join usuarios u on u.id = p.registrado_por
+          where g.inscripcion_id = $1
+          order by p.recibido_en desc, p.creado_en desc`,
         [id],
       );
 
       return {
         inscripcion: rows[0],
-        expediente: expediente[0] ?? null,
-        representantes,
-        cursos,
+        ficha: ficha[0] ?? null,
+        otrosCursos,
         cargos,
+        pagos,
       };
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cambios de estado
+  // ---------------------------------------------------------------------------
+  /*
+    Completar, retirar o cancelar. Las fechas no las escribe quien administra:
+    las pone el sistema al cambiar el estado, porque "completado el 3 de marzo"
+    y "estado completada" no pueden contradecirse.
+  */
+  async actualizar(
+    sesion: Sesion,
+    id: string,
+    datos: ActualizarInscripcionDto,
+    origen: Origen,
+  ) {
+    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
+      const { rows: antes } = await cliente.query<{
+        estado: string;
+        nombre: string;
+        curso: string;
+      }>(
+        `select i.estado::text as estado, u.nombre_completo as nombre, c.nombre as curso
+           from inscripciones i
+           join cursos c on c.id = i.curso_id
+           join membresias m on m.id = i.membresia_id
+           join usuarios u on u.id = m.usuario_id
+          where i.id = $1
+          for update of i`,
+        [id],
+      );
+      if (!antes[0]) throw new NotFoundException('Esa inscripcion no existe.');
+
+      const estado = datos.estado ?? antes[0].estado;
+
+      await cliente.query(
+        `update inscripciones set
+            estado = $2::estado_inscripcion,
+            calificacion = coalesce($3::numeric, calificacion),
+            completado_en = case when $2 = 'completada'
+                                 then coalesce(completado_en, current_date) end,
+            retirado_en   = case when $2 in ('retirada', 'cancelada')
+                                 then coalesce(retirado_en, current_date) end,
+            motivo_retiro = case when $2 in ('retirada', 'cancelada')
+                                 then coalesce($4, motivo_retiro) end,
+            observaciones = coalesce($5, observaciones)
+          where id = $1`,
+        [
+          id,
+          estado,
+          datos.calificacion ?? null,
+          datos.motivoRetiro ?? null,
+          datos.observaciones ?? null,
+        ],
+      );
+
+      await anotar(
+        cliente,
+        {
+          accion: 'inscripcion.actualizada',
+          entidad: 'inscripciones',
+          entidadId: id,
+          datos: {
+            nombre: antes[0].nombre,
+            curso: antes[0].curso,
+            estadoAntes: antes[0].estado,
+            estadoDespues: estado,
+            calificacion: datos.calificacion ?? null,
+          },
+        },
+        origen,
+      );
+
+      const { rows } = await cliente.query<Inscripcion>(
+        `${LISTA} where i.id = $1`,
+        [id],
+      );
+      return { inscripcion: rows[0] };
     });
   }
 
@@ -470,21 +559,24 @@ export class InscripcionesServicio {
   // ---------------------------------------------------------------------------
 
   /*
-    LGL-2026-0001. Las siglas van delante porque la plataforma vive en un solo
-    dominio: al entrar hay que poder distinguir de que colegio es la matricula
+    ITC-2026-0001. Las siglas van delante porque la plataforma vive en un solo
+    dominio: al entrar hay que poder distinguir de que centro es la matricula
     sin preguntarselo a quien la escribe.
 
     El numero sale de un contador atomico y no de un max()+1, que con dos
-    secretarias inscribiendo a la vez daria la misma matricula a dos ninos.
+    personas inscribiendo a la vez daria la misma matricula a dos alumnos.
+
+    El ano es el natural: aqui no hay ano lectivo que sirva de espacio de
+    numeracion, y una matricula sin ano no dice cuando entro nadie.
   */
   private async siguienteMatricula(
     cliente: PoolClient,
     institucionId: string,
     siglas: string | null | undefined,
-    anoCodigo: string,
   ): Promise<string> {
-    const prefijo = (siglas ?? 'EDU').replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'EDU';
-    const ano = anoCodigo.slice(0, 4);
+    const prefijo =
+      (siglas ?? 'EDU').replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'EDU';
+    const ano = String(new Date().getFullYear());
 
     const { rows } = await cliente.query<{ valor: number }>(
       `select app.siguiente_numero($1, $2) as valor`,
@@ -494,240 +586,146 @@ export class InscripcionesServicio {
     return `${prefijo}-${ano}-${String(rows[0].valor).padStart(4, '0')}`;
   }
 
-  private async leerSeccionParaInscribir(cliente: PoolClient, seccionId: string) {
+  private async leerCursoParaInscribir(cliente: PoolClient, cursoId: string) {
     const { rows } = await cliente.query<{
+      codigo: string;
       nombre: string;
-      grado: string;
-      sedeId: string | null;
+      estado: string;
+      precio: string;
       cupo: number | null;
-      anoEscolarId: string;
-      anoCodigo: string;
-      anoInicio: string;
-      anoEstado: string;
+      iniciaEn: string | null;
       inscritos: number;
     }>(
-      `select s.nombre, g.nombre as grado, s.sede_id as "sedeId", s.cupo,
-              s.ano_escolar_id as "anoEscolarId", a.codigo as "anoCodigo",
-              to_char(a.inicio, 'YYYY-MM-DD') as "anoInicio",
-              a.estado::text as "anoEstado",
+      `select c.codigo, c.nombre,
+              app.estado_curso_por_fechas(c.inicia_en, c.termina_en)::text as estado,
+              c.precio::text as precio,
+              c.cupo,
+              coalesce(to_char(greatest(c.inicia_en, current_date), 'YYYY-MM-DD'),
+                       to_char(current_date, 'YYYY-MM-DD')) as "iniciaEn",
               (select count(*)::int from inscripciones i
-                where i.seccion_id = s.id and i.estado in ('preinscrito','inscrito'))
-                as inscritos
-         from secciones s
-         join grados g on g.id = s.grado_id
-         join anos_escolares a on a.id = s.ano_escolar_id
-        where s.id = $1 and s.eliminado_en is null`,
-      [seccionId],
-    );
-
-    const seccion = rows[0];
-    if (!seccion) throw new NotFoundException('Esa seccion no existe.');
-
-    if (seccion.anoEstado === 'cerrado') {
-      throw new BadRequestException(
-        `El ano ${seccion.anoCodigo} esta cerrado: no admite inscripciones.`,
-      );
-    }
-
-    // El cupo es una decision del colegio, no un limite tecnico, pero pasarlo
-    // sin darse cuenta es como aparecen secciones de 45 ninos en un aula de 30.
-    if (seccion.cupo !== null && seccion.inscritos >= seccion.cupo) {
-      throw new BadRequestException(
-        `${seccion.grado} ${seccion.nombre} ya tiene ${seccion.inscritos} de ${seccion.cupo} cupos ocupados.`,
-      );
-    }
-
-    return seccion;
-  }
-
-  private async enlazarRepresentantes(
-    cliente: PoolClient,
-    institucionId: string,
-    membresiaId: string,
-    representantes: RepresentanteDto[],
-  ) {
-    if (representantes.length === 0) {
-      throw new BadRequestException(
-        'Un estudiante necesita al menos un representante: es quien responde por el y a quien se cobra.',
-      );
-    }
-
-    // Si nadie viene marcado como principal, lo es el primero: la factura y las
-    // llamadas tienen que tener destinatario.
-    const principal = representantes.findIndex((r) => r.esPrincipal);
-    const indicePrincipal = principal === -1 ? 0 : principal;
-
-    for (const [i, rep] of representantes.entries()) {
-      let representanteId = rep.id;
-
-      if (representanteId) {
-        // Actualiza los datos de contacto: si la madre cambio de telefono, este
-        // es el momento en que el colegio se entera.
-        await cliente.query(
-          `update representantes set
-              nombres = $2, apellidos = $3, tipo_documento = $4::tipo_documento,
-              documento = $5, telefono = $6, telefono_trabajo = $7, correo = $8::citext,
-              direccion = $9, ocupacion = $10, lugar_trabajo = $11
-            where id = $1`,
-          [
-            representanteId,
-            rep.nombres,
-            rep.apellidos,
-            rep.tipoDocumento ?? 'cedula',
-            rep.documento ?? null,
-            rep.telefono ?? null,
-            rep.telefonoTrabajo ?? null,
-            rep.correo ?? null,
-            rep.direccion ?? null,
-            rep.ocupacion ?? null,
-            rep.lugarTrabajo ?? null,
-          ],
-        );
-      } else {
-        const { rows } = await cliente.query<{ id: string }>(
-          `insert into representantes
-             (institucion_id, nombres, apellidos, tipo_documento, documento,
-              telefono, telefono_trabajo, correo, direccion, ocupacion, lugar_trabajo)
-           values ($1, $2, $3, $4::tipo_documento, $5, $6, $7, $8::citext, $9, $10, $11)
-           returning id`,
-          [
-            institucionId,
-            rep.nombres,
-            rep.apellidos,
-            rep.tipoDocumento ?? 'cedula',
-            rep.documento ?? null,
-            rep.telefono ?? null,
-            rep.telefonoTrabajo ?? null,
-            rep.correo ?? null,
-            rep.direccion ?? null,
-            rep.ocupacion ?? null,
-            rep.lugarTrabajo ?? null,
-          ],
-        );
-        representanteId = rows[0].id;
-      }
-
-      await cliente.query(
-        `insert into estudiante_representantes
-           (institucion_id, membresia_id, representante_id, parentesco,
-            es_principal, puede_retirar)
-         values ($1, $2, $3, $4::parentesco, $5, $6)`,
-        [
-          institucionId,
-          membresiaId,
-          representanteId,
-          rep.parentesco,
-          i === indicePrincipal,
-          rep.puedeRetirar ?? true,
-        ],
-      );
-    }
-  }
-
-  /*
-    El estudiante entra en todos los cursos de su seccion de una vez. Es la
-    razon de ser de todo el modelo: en un colegio nadie elige materias, asi que
-    preguntar curso por curso seria inventar un trabajo que no existe.
-  */
-  private async matricularEnCursos(
-    cliente: PoolClient,
-    institucionId: string,
-    inscripcionId: string,
-    seccionId: string,
-  ): Promise<number> {
-    const { rowCount } = await cliente.query(
-      `insert into curso_estudiantes (institucion_id, curso_id, inscripcion_id)
-       select $1, c.id, $2
+                where i.curso_id = c.id
+                  and i.estado in ('preinscrita', 'activa')) as inscritos
          from cursos c
-        where c.seccion_id = $3 and c.eliminado_en is null
-       on conflict (curso_id, inscripcion_id) do nothing`,
-      [institucionId, inscripcionId, seccionId],
-    );
-    return rowCount ?? 0;
-  }
-
-  /*
-    Genera los cargos del ano: la inscripcion de una vez y las mensualidades una
-    por cuota, con su fecha de vencimiento contada desde el inicio del ano.
-
-    El monto se copia al cargo en vez de referenciarse: si el colegio sube la
-    mensualidad en marzo, lo ya facturado en enero no puede cambiar solo.
-  */
-  private async generarCargos(
-    cliente: PoolClient,
-    institucionId: string,
-    inscripcionId: string,
-    anoEscolarId: string,
-    anoInicio: string,
-    elegidos?: string[],
-  ): Promise<number> {
-    const condicion = elegidos?.length
-      ? `and c.id = any ($2::uuid[])`
-      : `and c.obligatorio`;
-
-    const { rows: conceptos } = await cliente.query<{
-      id: string;
-      nombre: string;
-      tipo: string;
-      monto: string;
-      cuotas: number | null;
-      diaVencimiento: number | null;
-    }>(
-      `select c.id, c.nombre, c.tipo::text as tipo, c.monto::text as monto,
-              c.cuotas, c.dia_vencimiento as "diaVencimiento"
-         from conceptos_cobro c
-        where c.activo
-          and (c.ano_escolar_id = $1 or c.ano_escolar_id is null)
-          ${condicion}
-        order by c.tipo`,
-      elegidos?.length ? [anoEscolarId, elegidos] : [anoEscolarId],
+        where c.id = $1 and c.eliminado_en is null
+        for update of c`,
+      [cursoId],
     );
 
-    let generados = 0;
+    const curso = rows[0];
+    if (!curso) throw new NotFoundException('Ese curso no existe.');
 
-    for (const concepto of conceptos) {
-      const cuotas = concepto.tipo === 'mensualidad' ? (concepto.cuotas ?? 10) : 1;
-
-      for (let cuota = 1; cuota <= cuotas; cuota++) {
-        const vence = this.vencimiento(
-          anoInicio,
-          concepto.tipo === 'mensualidad' ? cuota : null,
-          concepto.diaVencimiento,
-        );
-
-        await cliente.query(
-          `insert into cargos
-             (institucion_id, inscripcion_id, concepto_id, descripcion, monto,
-              cuota, vence_en)
-           values ($1, $2, $3, $4, $5::numeric, $6, $7::date)`,
-          [
-            institucionId,
-            inscripcionId,
-            concepto.id,
-            cuotas > 1 ? `${concepto.nombre} · cuota ${cuota} de ${cuotas}` : concepto.nombre,
-            concepto.monto,
-            cuotas > 1 ? cuota : null,
-            vence,
-          ],
-        );
-        generados++;
-      }
+    if (curso.estado === 'graduado') {
+      throw new BadRequestException(
+        `${curso.codigo} ya termino: no admite nuevas inscripciones.`,
+      );
     }
 
-    return generados;
+    /*
+      El cupo es una decision del centro, no un limite tecnico, pero pasarlo sin
+      darse cuenta es como aparecen aulas de treinta sillas con treinta y cinco
+      personas dentro. El "for update" de arriba es lo que hace fiable esta
+      cuenta: sin el, dos inscripciones simultaneas leerian el mismo total y
+      ambas pasarian.
+    */
+    if (curso.cupo !== null && curso.inscritos >= curso.cupo) {
+      throw new BadRequestException(
+        `${curso.codigo} ya tiene ${curso.inscritos} de ${curso.cupo} cupos ocupados.`,
+      );
+    }
+
+    return curso;
+  }
+
+  private async leerAlumno(cliente: PoolClient, membresiaId: string) {
+    const { rows } = await cliente.query<{
+      matricula: string | null;
+      nombre: string;
+    }>(
+      `select m.codigo as matricula, u.nombre_completo as nombre
+         from membresias m
+         join usuarios u on u.id = m.usuario_id
+        where m.id = $1 and m.estado = 'activa' and m.eliminado_en is null`,
+      [membresiaId],
+    );
+    if (!rows[0]) {
+      throw new NotFoundException(
+        'Esa persona no existe o su membresia no esta activa.',
+      );
+    }
+    return rows[0];
   }
 
   /*
-    La inscripcion vence el dia que se genera; la cuota N, N-1 meses despues del
-    inicio del ano. Se calcula en UTC y sobre el dia 1 antes de fijar el dia del
-    mes, para que sumar un mes a un 31 de enero no se vaya a marzo.
-  */
-  private vencimiento(anoInicio: string, cuota: number | null, dia: number | null): string {
-    const [ano, mes] = anoInicio.split('-').map(Number);
-    if (cuota === null) return anoInicio;
+    Alta completa de alguien que nunca habia pisado el centro: cuenta, membresia
+    con matricula, rol de estudiante y ficha. La clave se pone despues, fuera de
+    esta transaccion, por el reparto de permisos entre los dos roles de conexion.
 
-    const fecha = new Date(Date.UTC(ano, mes - 1 + (cuota - 1), 1));
-    fecha.setUTCDate(Math.min(dia ?? 5, 28));
-    return fecha.toISOString().slice(0, 10);
+    Las tres primeras las hace app.crear_alumno() y no un insert aqui, y no es un
+    capricho de estilo: "insert into usuarios ... returning id" es imposible desde
+    el rol de negocio. Con RLS, un insert que devuelve filas tiene que pasar
+    tambien las politicas de select, y usuarios_lectura solo deja ver a quien
+    comparte institucion contigo. La persona recien creada todavia no comparte
+    ninguna -su membresia se inserta justo despues-, asi que la fila se escribe
+    bien y al devolverla la politica la tapa.
+
+    Es el mismo huevo y la misma gallina que resolvio app.crear_institucion(), y
+    se resuelve con la misma herramienta: una funcion SECURITY DEFINER que hace
+    el ciclo entero de una vez y comprueba el permiso por su cuenta.
+  */
+  private async crearPersona(
+    cliente: PoolClient,
+    institucionId: string,
+    datos: InscribirDto,
+  ) {
+    const { rows: siglas } = await cliente.query<{ siglas: string | null }>(
+      `select siglas from instituciones where id = $1`,
+      [institucionId],
+    );
+
+    const matricula = await this.siguienteMatricula(
+      cliente,
+      institucionId,
+      siglas[0]?.siglas,
+    );
+
+    const { rows: alta } = await cliente.query<{
+      usuarioId: string;
+      membresiaId: string;
+    }>(
+      `select usuario_id as "usuarioId", membresia_id as "membresiaId"
+         from app.crear_alumno($1, $2, $3::citext, $4, $5)`,
+      [
+        datos.nombres,
+        datos.apellidos,
+        datos.correo ?? null,
+        datos.telefono ?? null,
+        matricula,
+      ],
+    );
+    const { usuarioId, membresiaId } = alta[0];
+
+    await cliente.query(
+      `insert into participantes
+         (membresia_id, institucion_id, tipo_documento, documento, fecha_nacimiento,
+          sexo, telefono, direccion, ocupacion, empresa, como_nos_conocio, notas)
+       values ($1, $2, $3::tipo_documento, $4, $5::date, $6::sexo_persona, $7, $8,
+               $9, $10, $11, $12)`,
+      [
+        membresiaId,
+        institucionId,
+        datos.tipoDocumento ?? 'cedula',
+        datos.documento ?? null,
+        datos.fechaNacimiento ?? null,
+        datos.sexo ?? null,
+        datos.telefono ?? null,
+        datos.direccion ?? null,
+        datos.ocupacion ?? null,
+        datos.empresa ?? null,
+        datos.comoNosConocio ?? null,
+        datos.notas ?? null,
+      ],
+    );
+
+    return { usuarioId, membresiaId, matricula };
   }
 }

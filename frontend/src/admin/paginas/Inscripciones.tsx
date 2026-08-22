@@ -224,7 +224,7 @@ export function Inscripciones() {
                     setSoloDeuda(e.target.checked)
                     setPagina(1)
                   }}
-                  className="h-4 w-4 accent-[var(--color-pizarra,#2f6f4e)]"
+                  className="h-4 w-4 accent-[var(--color-pizarra,#0055fc)]"
                 />
                 <span className="text-[13px] text-tinta-media">Solo con deuda</span>
               </label>
@@ -658,7 +658,7 @@ export function FormularioInscripcion({
                 type="checkbox"
                 checked={sinCobro}
                 onChange={(e) => setSinCobro(e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-[var(--color-pizarra,#2f6f4e)]"
+                className="mt-0.5 h-4 w-4 accent-[var(--color-pizarra,#0055fc)]"
               />
               <span className="text-[13px] leading-relaxed text-tinta-media">
                 <span className="font-medium text-tinta">Sin cargo</span> · cortesía o

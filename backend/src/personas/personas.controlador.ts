@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { DeDonde, type Origen } from '../comun/auditoria';
 import { Actual, Roles, type Sesion } from '../comun/sesion';
 import {
   ActualizarPersonaDto,
+  CrearPersonaDto,
   ListarPersonasDto,
   RolesDto,
 } from './dto/personas.dto';
@@ -31,6 +33,15 @@ export class PersonasControlador {
   @Get()
   listar(@Actual() sesion: Sesion, @Query() filtros: ListarPersonasDto) {
     return this.personas.listar(sesion, filtros);
+  }
+
+  @Post()
+  crear(
+    @Actual() sesion: Sesion,
+    @Body() datos: CrearPersonaDto,
+    @DeDonde() origen: Origen,
+  ) {
+    return this.personas.crear(sesion, datos, origen);
   }
 
   @Patch(':id')

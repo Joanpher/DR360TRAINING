@@ -69,7 +69,11 @@ export class AuthServicio {
     crear una institucion propia (y quedarse como propietario) o aceptar una
     invitacion. Esa es la razon de que usuarios viva por encima del tenancy.
   */
-  async registrar(datos: RegistroDto, ip: string, agente: string): Promise<SesionAbierta> {
+  async registrar(
+    datos: RegistroDto,
+    ip: string,
+    agente: string,
+  ): Promise<SesionAbierta> {
     const hash = await hashearContrasena(datos.contrasena);
 
     const usuario = await this.bd.conIdentidad(async (cliente) => {
@@ -90,7 +94,9 @@ export class AuthServicio {
          values ($1, 'verificacion_correo', $2, now() + interval '2 days', $3)`,
         [creado.id, hashDeFicha(ficha), ip || null],
       );
-      this.bitacora.log(`Verificacion de ${creado.correo}: /verificar?ficha=${ficha}`);
+      this.bitacora.log(
+        `Verificacion de ${creado.correo}: /verificar?ficha=${ficha}`,
+      );
 
       return creado;
     });
@@ -114,7 +120,11 @@ export class AuthServicio {
     y exige que la membresia siga activa: a un estudiante retirado no se le
     cierra la puerta borrando su cuenta, sino dejando de reconocer su matricula.
   */
-  async entrar(datos: EntrarDto, ip: string, agente: string): Promise<SesionAbierta> {
+  async entrar(
+    datos: EntrarDto,
+    ip: string,
+    agente: string,
+  ): Promise<SesionAbierta> {
     const esCorreo = datos.identidad.includes('@');
 
     const fila = await this.bd.conIdentidad(async (cliente) => {
@@ -149,7 +159,11 @@ export class AuthServicio {
                 and m.estado = 'activa'
                 and m.eliminado_en is null
                 and u.eliminado_en is null`,
-        [esCorreo ? datos.identidad.toLowerCase() : datos.identidad.toUpperCase()],
+        [
+          esCorreo
+            ? datos.identidad.toLowerCase()
+            : datos.identidad.toUpperCase(),
+        ],
       );
       return rows[0] ?? null;
     });
@@ -159,7 +173,9 @@ export class AuthServicio {
     if (!fila) {
       await gastarTiempoDeVerificacion();
       throw new UnauthorizedException(
-        esCorreo ? 'Correo o contrasena incorrectos.' : 'Matricula o clave incorrectas.',
+        esCorreo
+          ? 'Correo o contrasena incorrectos.'
+          : 'Matricula o clave incorrectas.',
       );
     }
 
@@ -169,12 +185,17 @@ export class AuthServicio {
       );
     }
 
-    const correcta = await verificarContrasena(datos.contrasena, fila.hashContrasena);
+    const correcta = await verificarContrasena(
+      datos.contrasena,
+      fila.hashContrasena,
+    );
 
     if (!correcta) {
       await this.anotarIntentoFallido(fila.id, fila.intentos);
       throw new UnauthorizedException(
-        esCorreo ? 'Correo o contrasena incorrectos.' : 'Matricula o clave incorrectas.',
+        esCorreo
+          ? 'Correo o contrasena incorrectos.'
+          : 'Matricula o clave incorrectas.',
       );
     }
 
@@ -206,7 +227,10 @@ export class AuthServicio {
     );
   }
 
-  private async anotarIntentoFallido(usuarioId: string, intentosPrevios: number) {
+  private async anotarIntentoFallido(
+    usuarioId: string,
+    intentosPrevios: number,
+  ) {
     const intentos = intentosPrevios + 1;
     const bloquear = intentos >= INTENTOS_ANTES_DE_BLOQUEAR;
     await this.bd.conIdentidad((cliente) =>
@@ -215,7 +239,12 @@ export class AuthServicio {
             set intentos_fallidos = $2,
                 bloqueado_hasta = case when $3 then now() + ($4 || ' minutes')::interval else bloqueado_hasta end
           where id = $1`,
-        [usuarioId, bloquear ? 0 : intentos, bloquear, String(MINUTOS_DE_BLOQUEO)],
+        [
+          usuarioId,
+          bloquear ? 0 : intentos,
+          bloquear,
+          String(MINUTOS_DE_BLOQUEO),
+        ],
       ),
     );
   }
@@ -267,7 +296,12 @@ export class AuthServicio {
     });
 
     return {
-      acceso: await this.firmarAcceso(usuario, sesionId, institucionActual, instituciones),
+      acceso: await this.firmarAcceso(
+        usuario,
+        sesionId,
+        institucionActual,
+        instituciones,
+      ),
       refresco,
       usuario,
       instituciones,
@@ -280,8 +314,13 @@ export class AuthServicio {
     que se entrega el siguiente. Si un refresco robado se usa despues del
     legitimo, no encuentra sesion y el intruso se queda fuera.
   */
-  async refrescar(fichaRefresco: string, ip: string, agente: string): Promise<SesionAbierta> {
-    if (!fichaRefresco) throw new UnauthorizedException('No hay sesion que refrescar.');
+  async refrescar(
+    fichaRefresco: string,
+    ip: string,
+    agente: string,
+  ): Promise<SesionAbierta> {
+    if (!fichaRefresco)
+      throw new UnauthorizedException('No hay sesion que refrescar.');
 
     const datos = await this.bd.conIdentidad(async (cliente) => {
       const { rows } = await cliente.query<{
@@ -311,7 +350,8 @@ export class AuthServicio {
       return rows[0] ?? null;
     });
 
-    if (!datos) throw new UnauthorizedException('La sesion expiro o fue cerrada.');
+    if (!datos)
+      throw new UnauthorizedException('La sesion expiro o fue cerrada.');
     if (datos.estado === 'suspendido' || datos.estado === 'bloqueado') {
       throw new ForbiddenException('Esta cuenta esta inhabilitada.');
     }
@@ -322,7 +362,12 @@ export class AuthServicio {
         `update sesiones
             set hash_refresco = $2, ultimo_uso_en = now(), ip = $3, agente = $4
           where id = $1`,
-        [datos.sesionId, hashDeFicha(nuevoRefresco), ip || null, agente?.slice(0, 400) || null],
+        [
+          datos.sesionId,
+          hashDeFicha(nuevoRefresco),
+          ip || null,
+          agente?.slice(0, 400) || null,
+        ],
       ),
     );
 
@@ -339,11 +384,18 @@ export class AuthServicio {
     // Si perdio la membresia mientras la sesion seguia abierta, el contexto se
     // cae solo: la institucion deja de estar en la lista y el token nuevo no la
     // lleva.
-    const sigueSiendoMiembro = instituciones.some((i) => i.id === datos.institucionId);
+    const sigueSiendoMiembro = instituciones.some(
+      (i) => i.id === datos.institucionId,
+    );
     const institucionActual = sigueSiendoMiembro ? datos.institucionId : null;
 
     return {
-      acceso: await this.firmarAcceso(usuario, datos.sesionId, institucionActual, instituciones),
+      acceso: await this.firmarAcceso(
+        usuario,
+        datos.sesionId,
+        institucionActual,
+        instituciones,
+      ),
       refresco: nuevoRefresco,
       usuario,
       instituciones,
@@ -375,7 +427,10 @@ export class AuthServicio {
     si la consulta no devuelve fila es porque las politicas no la dejaron ver,
     que es exactamente la respuesta que se necesita.
   */
-  async elegirInstitucion(sesion: Sesion, institucionId: string): Promise<SesionAbierta> {
+  async elegirInstitucion(
+    sesion: Sesion,
+    institucionId: string,
+  ): Promise<SesionAbierta> {
     const instituciones = await this.listarInstituciones(sesion.usuarioId);
     const elegida = instituciones.find((i) => i.id === institucionId);
 
@@ -396,7 +451,12 @@ export class AuthServicio {
 
     const usuario = await this.leerUsuario(sesion.usuarioId);
     return {
-      acceso: await this.firmarAcceso(usuario, sesion.sesionId, institucionId, instituciones),
+      acceso: await this.firmarAcceso(
+        usuario,
+        sesion.sesionId,
+        institucionId,
+        instituciones,
+      ),
       refresco: '',
       usuario,
       instituciones,
@@ -439,7 +499,9 @@ export class AuthServicio {
     y membresia_roles dejan a cada quien ver lo suyo aunque no haya elegido
     todavia a donde entrar.
   */
-  private async listarInstituciones(usuarioId: string): Promise<InstitucionDelUsuario[]> {
+  private async listarInstituciones(
+    usuarioId: string,
+  ): Promise<InstitucionDelUsuario[]> {
     return this.bd.conContexto({ usuarioId }, async (cliente: PoolClient) => {
       const { rows } = await cliente.query<InstitucionDelUsuario>(
         `select i.id, i.slug, i.nombre, i.siglas, i.estado::text as estado,

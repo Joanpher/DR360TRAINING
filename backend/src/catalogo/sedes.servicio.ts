@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BaseDatos } from '../basedatos/basedatos.servicio';
 import { anotar, diferencias, type Origen } from '../comun/auditoria';
 import { contextoDe, institucionDe } from '../comun/contexto';
 import type { Sesion } from '../comun/sesion';
-import type { ActualizarSedeDto, CrearSedeDto } from './dto/academico.dto';
+import type { ActualizarSedeDto, CrearSedeDto } from './dto/catalogo.dto';
 
 export type Sede = {
   id: string;
@@ -78,7 +82,11 @@ export class SedesServicio {
           accion: 'sede.creada',
           entidad: 'sedes',
           entidadId: rows[0].id,
-          datos: { codigo: datos.codigo, nombre: datos.nombre, esPrincipal: primera },
+          datos: {
+            codigo: datos.codigo,
+            nombre: datos.nombre,
+            esPrincipal: primera,
+          },
         },
         origen,
       );
@@ -88,7 +96,12 @@ export class SedesServicio {
     });
   }
 
-  async actualizar(sesion: Sesion, id: string, datos: ActualizarSedeDto, origen: Origen) {
+  async actualizar(
+    sesion: Sesion,
+    id: string,
+    datos: ActualizarSedeDto,
+    origen: Origen,
+  ) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const antes = await this.leer(cliente, id);
 
@@ -120,7 +133,12 @@ export class SedesServicio {
 
         await anotar(
           cliente,
-          { accion: 'sede.actualizada', entidad: 'sedes', entidadId: id, datos: { cambios } },
+          {
+            accion: 'sede.actualizada',
+            entidad: 'sedes',
+            entidadId: id,
+            datos: { cambios },
+          },
           origen,
         );
       }
@@ -146,7 +164,10 @@ export class SedesServicio {
       await cliente.query(
         `update sedes set es_principal = false where es_principal and eliminado_en is null`,
       );
-      await cliente.query(`update sedes set es_principal = true where id = $1`, [id]);
+      await cliente.query(
+        `update sedes set es_principal = true where id = $1`,
+        [id],
+      );
 
       await anotar(
         cliente,
@@ -166,9 +187,9 @@ export class SedesServicio {
 
   /*
     Borrado logico. La sede aparece en el historial de quien estudio ahi y en
-    las unidades academicas que la referencian; borrarla de verdad dejaria esas
-    filas apuntando al vacio o, con la clave foranea puesta a restrict, haria
-    fallar el delete sin explicar por que.
+    los cursos que se impartieron en ella; borrarla de verdad dejaria esas filas
+    apuntando al vacio o, con la clave foranea puesta a restrict, haria fallar
+    el delete sin explicar por que.
   */
   async eliminar(sesion: Sesion, id: string, origen: Origen) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
@@ -180,21 +201,27 @@ export class SedesServicio {
         );
       }
 
-      const { rows: usos } = await cliente.query<{ unidades: number; personas: number }>(
-        `select (select count(*)::int from unidades_academicas
-                  where sede_id = $1 and eliminado_en is null) as unidades,
+      const { rows: usos } = await cliente.query<{
+        cursos: number;
+        personas: number;
+      }>(
+        `select (select count(*)::int from cursos
+                  where sede_id = $1 and eliminado_en is null) as cursos,
                 (select count(*)::int from membresias
                   where sede_id = $1 and eliminado_en is null) as personas`,
         [id],
       );
 
-      if (usos[0].unidades > 0 || usos[0].personas > 0) {
+      if (usos[0].cursos > 0 || usos[0].personas > 0) {
         throw new BadRequestException(
-          `Esa sede todavia tiene ${usos[0].unidades} unidades y ${usos[0].personas} personas asignadas. Muevelas antes de eliminarla.`,
+          `Esa sede todavia tiene ${usos[0].cursos} curso(s) y ${usos[0].personas} persona(s) asignadas. Muevelas antes de eliminarla.`,
         );
       }
 
-      await cliente.query(`update sedes set eliminado_en = now() where id = $1`, [id]);
+      await cliente.query(
+        `update sedes set eliminado_en = now() where id = $1`,
+        [id],
+      );
 
       await anotar(
         cliente,

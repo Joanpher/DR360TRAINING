@@ -1,179 +1,173 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { BaseDatos } from '../basedatos/basedatos.servicio';
 import { anotar, type Origen } from '../comun/auditoria';
 import { contextoDe, institucionDe } from '../comun/contexto';
 import type { Sesion } from '../comun/sesion';
-import type { ConceptoDto, RegistrarPagoDto } from './dto/inscripciones.dto';
-
-export type Concepto = {
-  id: string;
-  anoEscolarId: string | null;
-  ano: string | null;
-  nombre: string;
-  tipo: string;
-  monto: string;
-  cuotas: number | null;
-  diaVencimiento: number | null;
-  obligatorio: boolean;
-  activo: boolean;
-  cargos: number;
-};
+import type { CargoDto, RegistrarPagoDto } from './dto/inscripciones.dto';
 
 /*
-  Los montos viajan como texto, no como number.
+  El dinero se registra, no se procesa. El sistema emite los cargos y guarda los
+  pagos que la administracion recibe; no cobra con tarjeta.
 
-  numeric(12,2) en Postgres tiene mas precision que el double de JavaScript, y
-  convertirlo a number para volver a serializarlo es donde aparecen los 1499.99
-  que deberian ser 1500.00. El navegador lo formatea para mostrarlo y lo manda
-  de vuelta como numero solo cuando el usuario escribe una cifra nueva.
+  El cargo del curso lo genera la inscripcion. Aqui viven los extras -material,
+  repeticion de examen, certificado impreso- y todo el ciclo del pago: recibir,
+  anular, condonar.
+
+  Ya no hay conceptos_cobro. Existia para desplegar diez mensualidades desde una
+  plantilla anual, y un curso no se paga en diez meses: se paga, o se abona
+  hasta pagarse.
 */
-const LISTA_CONCEPTOS = `
-  select c.id, c.ano_escolar_id as "anoEscolarId", a.codigo as ano,
-         c.nombre, c.tipo::text as tipo, c.monto::text as monto,
-         c.cuotas, c.dia_vencimiento as "diaVencimiento",
-         c.obligatorio, c.activo,
-         (select count(*)::int from cargos g where g.concepto_id = c.id) as cargos
-    from conceptos_cobro c
-    left join anos_escolares a on a.id = c.ano_escolar_id
-   order by c.tipo, c.nombre
-`;
-
 @Injectable()
 export class CobrosServicio {
   constructor(private readonly bd: BaseDatos) {}
 
-  async listarConceptos(sesion: Sesion): Promise<{ conceptos: Concepto[] }> {
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const { rows } = await cliente.query<Concepto>(LISTA_CONCEPTOS);
-      return { conceptos: rows };
-    });
-  }
+  // ---------------------------------------------------------------------------
+  // Cargos
+  // ---------------------------------------------------------------------------
 
-  async crearConcepto(sesion: Sesion, datos: ConceptoDto, origen: Origen) {
-    if (datos.tipo === 'mensualidad' && !datos.cuotas) {
-      throw new BadRequestException(
-        'Una mensualidad necesita saber cuantas cuotas se generan.',
+  async crearCargo(
+    sesion: Sesion,
+    inscripcionId: string,
+    datos: CargoDto,
+    origen: Origen,
+  ) {
+    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
+      const { rows: existe } = await cliente.query<{ nombre: string }>(
+        `select u.nombre_completo as nombre
+           from inscripciones i
+           join membresias m on m.id = i.membresia_id
+           join usuarios u on u.id = m.usuario_id
+          where i.id = $1`,
+        [inscripcionId],
       );
-    }
+      if (!existe[0]) throw new NotFoundException('Esa inscripcion no existe.');
 
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const { rows } = await cliente.query<{ id: string }>(
-        `insert into conceptos_cobro
-           (institucion_id, ano_escolar_id, nombre, tipo, monto, cuotas,
-            dia_vencimiento, obligatorio, activo)
-         values ($1, $2, $3, $4::tipo_concepto, $5::numeric, $6, $7, $8, $9)
+        `insert into cargos (institucion_id, inscripcion_id, descripcion, monto, vence_en)
+         values ($1, $2, $3, $4::numeric, $5::date)
          returning id`,
         [
           institucionDe(sesion),
-          datos.anoEscolarId ?? null,
-          datos.nombre,
-          datos.tipo,
+          inscripcionId,
+          datos.descripcion,
           datos.monto,
-          datos.tipo === 'mensualidad' ? (datos.cuotas ?? 10) : null,
-          datos.diaVencimiento ?? null,
-          datos.obligatorio ?? true,
-          datos.activo ?? true,
+          datos.venceEn ?? null,
         ],
       );
 
       await anotar(
         cliente,
         {
-          accion: 'concepto_cobro.creado',
-          entidad: 'conceptos_cobro',
+          accion: 'cargo.creado',
+          entidad: 'cargos',
           entidadId: rows[0].id,
-          datos: { nombre: datos.nombre, tipo: datos.tipo, monto: datos.monto },
-        },
-        origen,
-      );
-
-      const { rows: conceptos } = await cliente.query<Concepto>(LISTA_CONCEPTOS);
-      return { conceptos };
-    });
-  }
-
-  /*
-    Cambiar el precio de un concepto NO reescribe los cargos ya emitidos. Es la
-    razon de que cargos.monto sea una copia: lo facturado en enero no puede
-    cambiar porque en marzo suba la mensualidad.
-  */
-  async actualizarConcepto(sesion: Sesion, id: string, datos: ConceptoDto, origen: Origen) {
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const { rows: antes } = await cliente.query<{ nombre: string; monto: string }>(
-        `select nombre, monto::text as monto from conceptos_cobro where id = $1 for update`,
-        [id],
-      );
-      if (!antes[0]) throw new NotFoundException('Ese concepto no existe.');
-
-      await cliente.query(
-        `update conceptos_cobro set
-            nombre = $2, tipo = $3::tipo_concepto, monto = $4::numeric,
-            cuotas = $5, dia_vencimiento = $6, obligatorio = $7, activo = $8
-          where id = $1`,
-        [
-          id,
-          datos.nombre,
-          datos.tipo,
-          datos.monto,
-          datos.tipo === 'mensualidad' ? (datos.cuotas ?? 10) : null,
-          datos.diaVencimiento ?? null,
-          datos.obligatorio ?? true,
-          datos.activo ?? true,
-        ],
-      );
-
-      await anotar(
-        cliente,
-        {
-          accion: 'concepto_cobro.actualizado',
-          entidad: 'conceptos_cobro',
-          entidadId: id,
           datos: {
-            nombre: datos.nombre,
-            montoAntes: antes[0].monto,
-            montoDespues: String(datos.monto),
+            alumno: existe[0].nombre,
+            descripcion: datos.descripcion,
+            monto: datos.monto.toFixed(2),
           },
         },
         origen,
       );
 
-      const { rows: conceptos } = await cliente.query<Concepto>(LISTA_CONCEPTOS);
-      return { conceptos };
+      return { id: rows[0].id };
     });
   }
 
-  async eliminarConcepto(sesion: Sesion, id: string, origen: Origen) {
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const { rows } = await cliente.query<{ nombre: string; cargos: number }>(
-        `select c.nombre,
-                (select count(*)::int from cargos g where g.concepto_id = c.id) as cargos
-           from conceptos_cobro c where c.id = $1`,
-        [id],
-      );
-      if (!rows[0]) throw new NotFoundException('Ese concepto no existe.');
+  /*
+    Condonar es perdonar lo que se debe: una beca que se aprueba tarde, un
+    acuerdo. El cargo se queda con el motivo escrito, porque un descuadre sin
+    explicacion es lo que despues nadie sabe justificar.
+  */
+  async condonarCargo(
+    sesion: Sesion,
+    cargoId: string,
+    motivo: string,
+    origen: Origen,
+  ) {
+    if (!motivo.trim()) {
+      throw new BadRequestException('Condonar un cargo exige decir por que.');
+    }
 
-      if (rows[0].cargos > 0) {
-        throw new BadRequestException(
-          `Ya se emitieron ${rows[0].cargos} cargos con ese concepto. Desactivalo en vez de eliminarlo.`,
-        );
+    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
+      const cargo = await this.leerCargo(cliente, cargoId);
+
+      if (cargo.estado === 'pagado') {
+        throw new BadRequestException('Ese cargo ya esta pagado.');
+      }
+      if (cargo.estado === 'condonado') {
+        throw new BadRequestException('Ese cargo ya estaba condonado.');
       }
 
-      await cliente.query('delete from conceptos_cobro where id = $1', [id]);
+      await cliente.query(
+        `update cargos set estado = 'condonado'::estado_cargo, motivo = $2 where id = $1`,
+        [cargoId, motivo],
+      );
 
       await anotar(
         cliente,
         {
-          accion: 'concepto_cobro.eliminado',
-          entidad: 'conceptos_cobro',
-          entidadId: id,
-          datos: { nombre: rows[0].nombre },
+          accion: 'cargo.condonado',
+          entidad: 'cargos',
+          entidadId: cargoId,
+          datos: { descripcion: cargo.descripcion, monto: cargo.monto, motivo },
         },
         origen,
       );
 
-      const { rows: conceptos } = await cliente.query<Concepto>(LISTA_CONCEPTOS);
-      return { conceptos };
+      return { condonado: true };
+    });
+  }
+
+  /*
+    Anular un cargo es distinto de condonarlo: condonar dice "se debia y lo
+    perdonamos", anular dice "nunca debio emitirse". Un cargo con pagos encima
+    no se anula, porque entonces el dinero recibido no tendria contra que ir.
+  */
+  async anularCargo(
+    sesion: Sesion,
+    cargoId: string,
+    motivo: string,
+    origen: Origen,
+  ) {
+    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
+      const cargo = await this.leerCargo(cliente, cargoId);
+
+      const { rows: pagos } = await cliente.query<{ total: number }>(
+        `select count(*)::int as total from pagos
+          where cargo_id = $1 and anulado_en is null`,
+        [cargoId],
+      );
+
+      if (pagos[0].total > 0) {
+        throw new BadRequestException(
+          'Ese cargo tiene pagos registrados. Anula primero los pagos, o condonalo.',
+        );
+      }
+
+      await cliente.query(
+        `update cargos set estado = 'anulado'::estado_cargo, anulado_en = now(), motivo = $2
+          where id = $1`,
+        [cargoId, motivo || null],
+      );
+
+      await anotar(
+        cliente,
+        {
+          accion: 'cargo.anulado',
+          entidad: 'cargos',
+          entidadId: cargoId,
+          datos: { descripcion: cargo.descripcion, monto: cargo.monto, motivo },
+        },
+        origen,
+      );
+
+      return { anulado: true };
     });
   }
 
@@ -183,17 +177,25 @@ export class CobrosServicio {
   /*
     Un pago se registra contra un cargo. Cuando lo pagado alcanza el monto, el
     cargo pasa a pagado; hasta entonces sigue pendiente, lo que permite los
-    abonos parciales que en un colegio son la norma.
+    abonos parciales que en un centro de cursos son la norma: la mitad al
+    inscribirse y el resto a mitad del curso.
 
     La suma se hace en la base y no en TypeScript: sumar numeric en Postgres es
     exacto, y sumar el equivalente en coma flotante no.
   */
-  async registrarPago(sesion: Sesion, cargoId: string, datos: RegistrarPagoDto, origen: Origen) {
+  async registrarPago(
+    sesion: Sesion,
+    cargoId: string,
+    datos: RegistrarPagoDto,
+    origen: Origen,
+  ) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const cargo = await this.leerCargo(cliente, cargoId);
 
       if (cargo.estado === 'anulado' || cargo.estado === 'condonado') {
-        throw new BadRequestException(`Ese cargo esta ${cargo.estado}: no admite pagos.`);
+        throw new BadRequestException(
+          `Ese cargo esta ${cargo.estado}: no admite pagos.`,
+        );
       }
 
       await cliente.query(
@@ -214,7 +216,10 @@ export class CobrosServicio {
         ],
       );
 
-      const { rows: saldo } = await cliente.query<{ pagado: string; saldado: boolean }>(
+      const { rows: saldo } = await cliente.query<{
+        pagado: string;
+        saldado: boolean;
+      }>(
         `select coalesce(sum(p.monto), 0)::text as pagado,
                 coalesce(sum(p.monto), 0) >= c.monto as saldado
            from cargos c
@@ -239,7 +244,7 @@ export class CobrosServicio {
           entidadId: cargoId,
           datos: {
             descripcion: cargo.descripcion,
-            monto: String(datos.monto),
+            monto: datos.monto.toFixed(2),
             metodo: datos.metodo,
             referencia: datos.referencia ?? null,
             saldado: saldo[0]?.saldado ?? false,
@@ -260,7 +265,16 @@ export class CobrosServicio {
     El rol de la aplicacion ni siquiera tiene permiso de delete sobre pagos, asi
     que un error de programacion tampoco puede hacer desaparecer un recibo.
   */
-  async anularPago(sesion: Sesion, pagoId: string, motivo: string, origen: Origen) {
+  async anularPago(
+    sesion: Sesion,
+    pagoId: string,
+    motivo: string,
+    origen: Origen,
+  ) {
+    if (!motivo.trim()) {
+      throw new BadRequestException('Anular un pago exige decir por que.');
+    }
+
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const { rows } = await cliente.query<{ cargoId: string; monto: string }>(
         `update pagos set anulado_en = now(), motivo_anulacion = $2
@@ -268,7 +282,8 @@ export class CobrosServicio {
         returning cargo_id as "cargoId", monto::text as monto`,
         [pagoId, motivo],
       );
-      if (!rows[0]) throw new NotFoundException('Ese pago no existe o ya estaba anulado.');
+      if (!rows[0])
+        throw new NotFoundException('Ese pago no existe o ya estaba anulado.');
 
       // Al quitar un pago el cargo puede dejar de estar saldado.
       await cliente.query(
@@ -291,34 +306,6 @@ export class CobrosServicio {
       );
 
       return { anulado: true };
-    });
-  }
-
-  async condonarCargo(sesion: Sesion, cargoId: string, motivo: string, origen: Origen) {
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const cargo = await this.leerCargo(cliente, cargoId);
-
-      if (cargo.estado === 'pagado') {
-        throw new BadRequestException('Ese cargo ya esta pagado.');
-      }
-
-      await cliente.query(
-        `update cargos set estado = 'condonado'::estado_cargo, motivo = $2 where id = $1`,
-        [cargoId, motivo],
-      );
-
-      await anotar(
-        cliente,
-        {
-          accion: 'cargo.condonado',
-          entidad: 'cargos',
-          entidadId: cargoId,
-          datos: { descripcion: cargo.descripcion, monto: cargo.monto, motivo },
-        },
-        origen,
-      );
-
-      return { condonado: true };
     });
   }
 

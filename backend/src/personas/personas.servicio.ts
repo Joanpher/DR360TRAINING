@@ -1,11 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import type { PoolClient } from 'pg';
+import { hashearContrasena } from '../auth/contrasenas';
 import { BaseDatos } from '../basedatos/basedatos.servicio';
 import { anotar, diferencias, type Origen } from '../comun/auditoria';
 import { contextoDe } from '../comun/contexto';
 import type { Sesion } from '../comun/sesion';
 import type {
   ActualizarPersonaDto,
+  CrearPersonaDto,
   ListarPersonasDto,
   RolesDto,
 } from './dto/personas.dto';
@@ -14,12 +21,10 @@ export type Persona = {
   id: string;
   usuarioId: string;
   nombre: string;
-  correo: string;
+  correo: string | null;
   codigo: string | null;
   estado: string;
   roles: string[];
-  unidadAcademicaId: string | null;
-  unidad: string | null;
   sedeId: string | null;
   sede: string | null;
   ingresoEn: string | null;
@@ -29,11 +34,19 @@ export type Persona = {
 };
 
 const POR_PAGINA = 25;
+const ALFABETO_CLAVE = 'ACDEFGHJKMNPQRTUVWXY2346789';
+
+function generarClave(largo = 12): string {
+  let clave = '';
+  for (let i = 0; i < largo; i++)
+    clave += ALFABETO_CLAVE[randomInt(ALFABETO_CLAVE.length)];
+  return clave;
+}
 
 /*
   Una institucion real tiene miles de estudiantes, asi que esta lista se filtra
   y se pagina en el servidor. Es la unica del panel que lo hace: las demas
-  -sedes, materias, grados- son decenas de filas y traerlas enteras sale mas
+  -sedes, categorias, cursos- son decenas de filas y traerlas enteras sale mas
   barato que paginarlas.
 
   El filtro por rol usa un exists y no el array agregado a proposito: exists se
@@ -44,7 +57,6 @@ const POR_PAGINA = 25;
 const CAMPOS = `
   m.id, m.usuario_id as "usuarioId", u.nombre_completo as nombre,
   u.correo::text as correo, m.codigo, m.estado::text as estado,
-  m.unidad_academica_id as "unidadAcademicaId", ua.nombre as unidad,
   m.sede_id as "sedeId", s.nombre as sede,
   to_char(m.ingreso_en, 'YYYY-MM-DD') as "ingresoEn",
   u.ultimo_acceso_en as "ultimoAcceso",
@@ -58,21 +70,83 @@ const CAMPOS = `
 const DESDE = `
   from membresias m
   join usuarios u on u.id = m.usuario_id
-  left join unidades_academicas ua
-         on ua.id = m.unidad_academica_id and ua.eliminado_en is null
   left join sedes s on s.id = m.sede_id and s.eliminado_en is null
   left join membresia_roles r on r.membresia_id = m.id
 `;
 
 const AGRUPAR = `
   group by m.id, m.usuario_id, u.nombre_completo, u.correo, m.codigo, m.estado,
-           m.unidad_academica_id, ua.nombre,
            m.sede_id, s.nombre, m.ingreso_en, u.ultimo_acceso_en
 `;
 
 @Injectable()
 export class PersonasServicio {
   constructor(private readonly bd: BaseDatos) {}
+
+  async crear(sesion: Sesion, datos: CrearPersonaDto, origen: Origen) {
+    const claveInicial = generarClave();
+
+    const alta = await this.bd.conContexto(
+      contextoDe(sesion),
+      async (cliente) => {
+        const { rows } = await cliente.query<{
+          usuarioId: string;
+          membresiaId: string;
+          esUsuarioNuevo: boolean;
+        }>(
+          `select usuario_id as "usuarioId", membresia_id as "membresiaId",
+                es_usuario_nuevo as "esUsuarioNuevo"
+           from app.crear_usuario_institucional($1, $2, $3, $4, $5, $6::rol_institucional)`,
+          [
+            datos.nombres,
+            datos.apellidos,
+            datos.correo,
+            datos.telefono ?? null,
+            datos.codigo ?? null,
+            datos.rol,
+          ],
+        );
+
+        await anotar(
+          cliente,
+          {
+            accion: 'membresia.creada',
+            entidad: 'membresias',
+            entidadId: rows[0].membresiaId,
+            datos: {
+              persona: `${datos.nombres} ${datos.apellidos}`,
+              correo: datos.correo,
+              rol: datos.rol,
+              usuarioNuevo: rows[0].esUsuarioNuevo,
+            },
+          },
+          origen,
+        );
+
+        return rows[0];
+      },
+    );
+
+    if (alta.esUsuarioNuevo) {
+      const hash = await hashearContrasena(claveInicial);
+      await this.bd.conIdentidad((cliente) =>
+        cliente.query(
+          `update usuarios set hash_contrasena = $2 where id = $1`,
+          [alta.usuarioId, hash],
+        ),
+      );
+    }
+
+    const persona = await this.bd.conContexto(contextoDe(sesion), (cliente) =>
+      this.leerCompleta(cliente, alta.membresiaId),
+    );
+
+    return {
+      persona,
+      clave: alta.esUsuarioNuevo ? claveInicial : null,
+      esUsuarioNuevo: alta.esUsuarioNuevo,
+    };
+  }
 
   async listar(sesion: Sesion, filtros: ListarPersonasDto) {
     const pagina = filtros.pagina ?? 1;
@@ -93,7 +167,6 @@ export class PersonasServicio {
       valores.push(filtros.estado);
       condiciones.push(`m.estado = $${valores.length}::estado_membresia`);
     }
-
 
     if (filtros.rol) {
       // "administracion" no es un rol de la base: es la pregunta "quien puede
@@ -145,7 +218,12 @@ export class PersonasServicio {
     });
   }
 
-  async actualizar(sesion: Sesion, id: string, datos: ActualizarPersonaDto, origen: Origen) {
+  async actualizar(
+    sesion: Sesion,
+    id: string,
+    datos: ActualizarPersonaDto,
+    origen: Origen,
+  ) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const antes = await this.leer(cliente, id);
 
@@ -167,7 +245,6 @@ export class PersonasServicio {
       const cambios = diferencias(
         {
           codigo: antes.codigo,
-          unidadAcademicaId: antes.unidadAcademicaId,
           sedeId: antes.sedeId,
           ingresoEn: antes.ingresoEn,
           estado: antes.estado,
@@ -178,15 +255,12 @@ export class PersonasServicio {
       if (Object.keys(cambios).length > 0) {
         await cliente.query(
           `update membresias set
-              codigo = $2, unidad_academica_id = $3,
-              sede_id = $4, ingreso_en = $5::date, estado = $6::estado_membresia
+              codigo = $2, sede_id = $3, ingreso_en = $4::date,
+              estado = $5::estado_membresia
             where id = $1`,
           [
             id,
             'codigo' in datos ? (datos.codigo ?? null) : antes.codigo,
-            'unidadAcademicaId' in datos
-              ? (datos.unidadAcademicaId ?? null)
-              : antes.unidadAcademicaId,
             'sedeId' in datos ? (datos.sedeId ?? null) : antes.sedeId,
             'ingresoEn' in datos ? (datos.ingresoEn ?? null) : antes.ingresoEn,
             datos.estado ?? antes.estado,
@@ -222,7 +296,12 @@ export class PersonasServicio {
     SQL directo, y el filtro de errores traduce ese P0001 al mensaje que el
     disparador ya trae escrito.
   */
-  async cambiarRoles(sesion: Sesion, id: string, datos: RolesDto, origen: Origen) {
+  async cambiarRoles(
+    sesion: Sesion,
+    id: string,
+    datos: RolesDto,
+    origen: Origen,
+  ) {
     const pedidos = [...new Set(datos.roles)];
 
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
@@ -247,7 +326,9 @@ export class PersonasServicio {
       */
       if (
         antes.usuarioId === sesion.usuarioId &&
-        quitar.some((rol) => rol === 'administrador' || rol === 'propietario') &&
+        quitar.some(
+          (rol) => rol === 'administrador' || rol === 'propietario',
+        ) &&
         !pedidos.some((rol) => rol === 'administrador' || rol === 'propietario')
       ) {
         throw new BadRequestException(
@@ -293,13 +374,11 @@ export class PersonasServicio {
       nombre: string;
       codigo: string | null;
       estado: string;
-      unidadAcademicaId: string | null;
       sedeId: string | null;
       ingresoEn: string | null;
     }>(
       `select m.usuario_id as "usuarioId", u.nombre_completo as nombre,
               m.codigo, m.estado::text as estado,
-              m.unidad_academica_id as "unidadAcademicaId",
               m.sede_id as "sedeId",
               to_char(m.ingreso_en, 'YYYY-MM-DD') as "ingresoEn"
          from membresias m
@@ -308,12 +387,16 @@ export class PersonasServicio {
         for update of m`,
       [id],
     );
-    if (!rows[0]) throw new NotFoundException('Esa persona no pertenece a la institucion.');
+    if (!rows[0])
+      throw new NotFoundException('Esa persona no pertenece a la institucion.');
     return rows[0];
   }
 
   /* Una sola fila con la misma forma que las de la lista, para reemplazarla. */
-  private async leerCompleta(cliente: PoolClient, id: string): Promise<Persona> {
+  private async leerCompleta(
+    cliente: PoolClient,
+    id: string,
+  ): Promise<Persona> {
     const { rows } = await cliente.query<Persona>(
       `select ${CAMPOS} ${DESDE} where m.id = $1 and m.eliminado_en is null ${AGRUPAR}`,
       [id],

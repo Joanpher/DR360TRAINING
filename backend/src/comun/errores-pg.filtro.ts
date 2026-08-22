@@ -22,21 +22,21 @@ import { DatabaseError } from 'pg';
 
 const MENSAJES_UNICIDAD: Record<string, string> = {
   usuarios_correo_uk: 'Ya existe una cuenta con ese correo.',
-  instituciones_slug_uk: 'Ese identificador ya esta tomado por otra institucion.',
+  instituciones_slug_uk:
+    'Ese identificador ya esta tomado por otra institucion.',
   membresias_usuario_uk: 'Esa persona ya pertenece a la institucion.',
   membresias_codigo_uk: 'Ya hay alguien con ese codigo o matricula.',
   sedes_codigo_uk: 'Ya existe una sede con ese codigo.',
   sedes_principal_uk: 'La institucion ya tiene una sede principal.',
-  anos_escolares_codigo_uk: 'Ya existe un ano escolar con ese codigo.',
-  anos_escolares_actual_uk: 'Ya hay un ano escolar marcado como actual.',
-  grados_nivel_orden_uk: 'Ya existe un grado con ese numero en ese nivel.',
-  asignaturas_codigo_uk: 'Ya existe una materia con ese codigo.',
-  secciones_nombre_uk: 'Ese grado ya tiene una seccion con ese nombre en este ano.',
-  cursos_seccion_asignatura_uk: 'Esa seccion ya tiene esa materia.',
   membresias_codigo_global_uk: 'Esa matricula ya esta en uso en la plataforma.',
-  unidades_academicas_codigo_uk: 'Ya existe una unidad academica con ese codigo.',
   invitaciones_pendiente_uk: 'Esa persona ya tiene una invitacion pendiente.',
   dominios_institucion_uk: 'Ese dominio ya pertenece a otra institucion.',
+  categorias_nombre_uk: 'Ya existe una categoria con ese nombre.',
+  cursos_codigo_uk: 'Ya existe un curso con ese codigo.',
+  curso_horarios_bloque_uk:
+    'Ese curso ya tiene un bloque que empieza a esa hora ese dia.',
+  participantes_documento_uk: 'Ya hay alguien registrado con ese documento.',
+  inscripciones_curso_persona_uk: 'Esa persona ya esta inscrita en ese curso.',
 };
 
 const NOMBRES_HTTP: Record<number, string> = {
@@ -72,7 +72,8 @@ export class FiltroErroresPg implements ExceptionFilter {
         return {
           estado: HttpStatus.CONFLICT,
           mensaje:
-            MENSAJES_UNICIDAD[error.constraint ?? ''] ?? 'Ese registro ya existe.',
+            MENSAJES_UNICIDAD[error.constraint ?? ''] ??
+            'Ese registro ya existe.',
         };
 
       // Incluye "new row violates row-level security policy": la fila que se
@@ -96,7 +97,10 @@ export class FiltroErroresPg implements ExceptionFilter {
         };
 
       case '23502':
-        return { estado: HttpStatus.BAD_REQUEST, mensaje: 'Falta un dato obligatorio.' };
+        return {
+          estado: HttpStatus.BAD_REQUEST,
+          mensaje: 'Falta un dato obligatorio.',
+        };
 
       case '23001':
         return {

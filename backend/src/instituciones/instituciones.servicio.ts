@@ -60,7 +60,12 @@ export type Dominio = {
   registroTxt: string;
 };
 
-export type Tramo = { letra: string; desde: number; hasta: number; puntos: number };
+export type Tramo = {
+  letra: string;
+  desde: number;
+  hasta: number;
+  puntos: number;
+};
 
 /*
   Escala por defecto: la de casi todas las universidades dominicanas. Se guarda
@@ -105,7 +110,10 @@ export class InstitucionesServicio {
     nace con propietario. Con la funcion, instituciones no necesita politica de
     insert: no hay otra puerta.
   */
-  async crear(sesion: Sesion, datos: CrearInstitucionDto): Promise<SesionAbierta> {
+  async crear(
+    sesion: Sesion,
+    datos: CrearInstitucionDto,
+  ): Promise<SesionAbierta> {
     const institucion = await this.bd.conContexto(
       { usuarioId: sesion.usuarioId },
       async (cliente) => {
@@ -126,7 +134,9 @@ export class InstitucionesServicio {
       },
     );
 
-    this.bitacora.log(`Institucion ${institucion.slug} creada por ${sesion.correo}`);
+    this.bitacora.log(
+      `Institucion ${institucion.slug} creada por ${sesion.correo}`,
+    );
 
     // Se devuelve un access token que ya lleva la institucion en el contexto,
     // para que el asistente entre directo en vez de pedir "elige una".
@@ -138,18 +148,26 @@ export class InstitucionesServicio {
     de la base devuelve un booleano y nada mas, justamente para que este
     endpoint no se convierta en un directorio de instituciones.
   */
-  async slugDisponible(sesion: Sesion, slug: string): Promise<{ disponible: boolean }> {
+  async slugDisponible(
+    sesion: Sesion,
+    slug: string,
+  ): Promise<{ disponible: boolean }> {
     if (!/^[a-z0-9]([a-z0-9-]{1,38})?[a-z0-9]$/.test(slug)) {
-      throw new BadRequestException('Ese identificador no tiene un formato valido.');
+      throw new BadRequestException(
+        'Ese identificador no tiene un formato valido.',
+      );
     }
 
-    return this.bd.conContexto({ usuarioId: sesion.usuarioId }, async (cliente) => {
-      const { rows } = await cliente.query<{ disponible: boolean }>(
-        'select app.slug_disponible($1::citext) as disponible',
-        [slug],
-      );
-      return rows[0];
-    });
+    return this.bd.conContexto(
+      { usuarioId: sesion.usuarioId },
+      async (cliente) => {
+        const { rows } = await cliente.query<{ disponible: boolean }>(
+          'select app.slug_disponible($1::citext) as disponible',
+          [slug],
+        );
+        return rows[0];
+      },
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -181,7 +199,11 @@ export class InstitucionesServicio {
   // ---------------------------------------------------------------------------
   // Datos generales
   // ---------------------------------------------------------------------------
-  async actualizar(sesion: Sesion, datos: ActualizarInstitucionDto, origen: Origen) {
+  async actualizar(
+    sesion: Sesion,
+    datos: ActualizarInstitucionDto,
+    origen: Origen,
+  ) {
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const antes = await this.leerFila(cliente, sesion, true);
 
@@ -194,7 +216,10 @@ export class InstitucionesServicio {
           : { ...antes.configuracion, descripcion };
 
       const cambios = diferencias(
-        { ...this.publica(antes), descripcion: antes.configuracion.descripcion ?? null },
+        {
+          ...this.publica(antes),
+          descripcion: antes.configuracion.descripcion ?? null,
+        },
         { ...columnas, descripcion },
       );
 
@@ -472,14 +497,20 @@ export class InstitucionesServicio {
   async verificarDominio(sesion: Sesion, id: string, origen: Origen) {
     const institucionId = institucionDe(sesion);
 
-    const fila = await this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const { rows } = await cliente.query<{ dominio: string; verificadoEn: Date | null }>(
-        `select dominio::text as dominio, verificado_en as "verificadoEn"
+    const fila = await this.bd.conContexto(
+      contextoDe(sesion),
+      async (cliente) => {
+        const { rows } = await cliente.query<{
+          dominio: string;
+          verificadoEn: Date | null;
+        }>(
+          `select dominio::text as dominio, verificado_en as "verificadoEn"
            from dominios_institucion where id = $1`,
-        [id],
-      );
-      return rows[0] ?? null;
-    });
+          [id],
+        );
+        return rows[0] ?? null;
+      },
+    );
 
     if (!fila) throw new NotFoundException('Ese dominio no existe.');
 
@@ -538,13 +569,18 @@ export class InstitucionesServicio {
   */
   async archivar(sesion: Sesion, datos: ArchivarDto, origen: Origen) {
     if (!sesion.roles.includes('propietario')) {
-      throw new ForbiddenException('Solo el propietario puede archivar la institucion.');
+      throw new ForbiddenException(
+        'Solo el propietario puede archivar la institucion.',
+      );
     }
 
     return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
       const antes = await this.leerFila(cliente, sesion, true);
 
-      if (datos.confirmacion.trim().toLowerCase() !== antes.nombre.trim().toLowerCase()) {
+      if (
+        datos.confirmacion.trim().toLowerCase() !==
+        antes.nombre.trim().toLowerCase()
+      ) {
         throw new BadRequestException(
           'Para archivar, escribe el nombre exacto de la institucion.',
         );
@@ -566,7 +602,9 @@ export class InstitucionesServicio {
         origen,
       );
 
-      this.bitacora.warn(`Institucion ${antes.slug} archivada por ${sesion.correo}`);
+      this.bitacora.warn(
+        `Institucion ${antes.slug} archivada por ${sesion.correo}`,
+      );
       return { archivada: true };
     });
   }
@@ -574,7 +612,6 @@ export class InstitucionesServicio {
   // ---------------------------------------------------------------------------
   // Piezas internas
   // ---------------------------------------------------------------------------
-
 
   /*
     for update bloquea la fila hasta el commit. Sin eso, dos administradores
@@ -598,7 +635,9 @@ export class InstitucionesServicio {
     cliente: PoolClient,
     institucionId: string,
   ): Promise<Dominio[]> {
-    const { rows } = await cliente.query<Omit<Dominio, 'registroTxt' | 'verificado'>>(
+    const { rows } = await cliente.query<
+      Omit<Dominio, 'registroTxt' | 'verificado'>
+    >(
       // Sin "where institucion_id": el aislamiento lo hace la politica, igual
       // que en el resto del sistema. El id que llega es solo para firmar el
       // registro TXT de cada dominio.
@@ -623,7 +662,10 @@ export class InstitucionesServicio {
     para tenerlo.
   */
   private tokenDominio(institucionId: string, dominio: string): string {
-    const firma = createHmac('sha256', this.config.getOrThrow<string>('JWT_SECRETO'))
+    const firma = createHmac(
+      'sha256',
+      this.config.getOrThrow<string>('JWT_SECRETO'),
+    )
       .update(`dominio:${institucionId}:${dominio}`)
       .digest('base64url')
       .slice(0, 32);

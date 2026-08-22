@@ -35,22 +35,22 @@ export function Acceso() {
   return (
     <MarcoAcceso
       entrada="Iniciar sesión"
-      titulo="Entra a DR360TRAINING"
-      descripcion="Si trabajas en la institución, entra con tu correo. Si eres estudiante, con la matrícula que te dio el colegio."
+      titulo="Bienvenido de nuevo"
+      descripcion="Usa tu correo institucional o tu matrícula para continuar."
       pie={
         <p className="text-[13px] leading-relaxed text-tinta-media">
-          ¿Vas a montar tu institución en DR360TRAINING?{' '}
+          ¿Administras una institución?{' '}
           <Link
             to="/crear-cuenta"
             className="text-pizarra underline-offset-4 hover:underline"
           >
-            Crea una cuenta
+            Crea una cuenta para comenzar
           </Link>
-          . Si tu institución ya está aquí, la administración crea tu cuenta.
+          .
         </p>
       }
     >
-      <form onSubmit={alEnviar} className="flex flex-col gap-5">
+      <form onSubmit={alEnviar} className="flex flex-col gap-4">
         {error && <Aviso>{error}</Aviso>}
 
         {/*
@@ -68,23 +68,15 @@ export function Acceso() {
           autoFocus
         />
 
-        <div>
-          <Campo
-            etiqueta="Contraseña o clave"
-            name="contrasena"
-            icono={Lock}
-            type="password"
-            autoComplete="current-password"
-            placeholder="La que usas para entrar"
-            required
-          />
-          <a
-            href="#recuperar"
-            className="mt-2 inline-block text-[13px] text-pizarra underline-offset-4 hover:underline"
-          >
-            ¿Olvidaste tu contraseña?
-          </a>
-        </div>
+        <Campo
+          etiqueta="Contraseña"
+          name="contrasena"
+          icono={Lock}
+          type="password"
+          autoComplete="current-password"
+          placeholder="Tu contraseña"
+          required
+        />
 
         <Boton
           type="submit"
@@ -94,7 +86,7 @@ export function Acceso() {
           disabled={enviando}
           iconoDer={<ArrowRight size={16} strokeWidth={1.75} />}
         >
-          {enviando ? 'Entrando…' : 'Entrar'}
+          {enviando ? 'Entrando…' : 'Iniciar sesión'}
         </Boton>
 
       </form>

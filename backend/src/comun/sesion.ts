@@ -37,7 +37,8 @@ export const Roles = (...roles: string[]) => SetMetadata(ROLES, roles);
 export const Actual = createParamDecorator(
   (_: unknown, contexto: ExecutionContext): Sesion => {
     const peticion = contexto.switchToHttp().getRequest<PeticionConSesion>();
-    if (!peticion.sesion) throw new UnauthorizedException('Sesion no iniciada.');
+    if (!peticion.sesion)
+      throw new UnauthorizedException('Sesion no iniciada.');
     return peticion.sesion;
   },
 );
@@ -74,7 +75,9 @@ export class GuardiaAcceso implements CanActivate {
     try {
       carga = await this.jwt.verifyAsync(ficha);
     } catch {
-      throw new UnauthorizedException('El token de acceso no es valido o expiro.');
+      throw new UnauthorizedException(
+        'El token de acceso no es valido o expiro.',
+      );
     }
 
     peticion.sesion = {

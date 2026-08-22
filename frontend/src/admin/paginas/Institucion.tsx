@@ -67,8 +67,8 @@ type Configuracion = {
   esPropietario: boolean
 }
 
-const COLOR_PRIMARIO = '#1E5245'
-const COLOR_ACENTO = '#5FB79A'
+const COLOR_PRIMARIO = '#0055FC'
+const COLOR_ACENTO = '#01D1D5'
 
 export function Institucion() {
   const { datos, cargando, error, recargar, fijar } = useConsulta<Configuracion>(

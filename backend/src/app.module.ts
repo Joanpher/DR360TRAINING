@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { AcademicoModule } from './academico/academico.module';
 import { AppControlador } from './app.controlador';
 import { AuthModule } from './auth/auth.module';
 import { BaseDatosModule } from './basedatos/basedatos.module';
+import { CatalogoModule } from './catalogo/catalogo.module';
 import { FiltroErroresPg } from './comun/errores-pg.filtro';
 import { GuardiaAcceso } from './comun/sesion';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
 import { InstitucionesModule } from './instituciones/instituciones.module';
 import { PersonasModule } from './personas/personas.module';
+import { AulasModule } from './aulas/aulas.module';
+import { EvaluacionesModule } from './evaluaciones/evaluaciones.module';
 
 @Module({
   imports: [
@@ -17,9 +19,11 @@ import { PersonasModule } from './personas/personas.module';
     BaseDatosModule,
     AuthModule,
     InstitucionesModule,
-    AcademicoModule,
+    CatalogoModule,
     PersonasModule,
     InscripcionesModule,
+    AulasModule,
+    EvaluacionesModule,
   ],
   controllers: [AppControlador],
   providers: [

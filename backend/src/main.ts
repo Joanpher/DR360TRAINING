@@ -2,19 +2,24 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function arrancar() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
+  // Las portadas se optimizan en el navegador antes de viajar. El limite sigue
+  // siendo acotado, pero supera los 100 KB por defecto de Express.
+  app.use(json({ limit: '2mb' }));
+  app.use(urlencoded({ extended: true, limit: '2mb' }));
   app.use(cookieParser());
 
   // credentials: true porque el refresco viaja en una cookie httpOnly, y sin
   // esto el navegador no la manda desde el origen de la aplicacion web.
   app.enableCors({
-    origin: config.get('ORIGEN_WEB') ?? 'http://localhost:5173',
+    origin: config.get<string>('ORIGEN_WEB') ?? 'http://localhost:5173',
     credentials: true,
   });
 
@@ -32,7 +37,9 @@ async function arrancar() {
   // escuchando solo en localhost el puerto quedaria abierto para nadie y el
   // health check daria el despliegue por muerto.
   await app.listen(puerto, '0.0.0.0');
-  new Logger('dr360').log(`API escuchando en el puerto ${puerto}, prefijo /api`);
+  new Logger('dr360').log(
+    `API escuchando en el puerto ${puerto}, prefijo /api`,
+  );
 }
 
 void arrancar();

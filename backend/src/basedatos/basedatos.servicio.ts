@@ -32,9 +32,10 @@ export class BaseDatos implements OnModuleDestroy {
         connectionString: url,
         // RDS presenta un certificado de su propia CA. En produccion conviene
         // cargar el bundle de AWS y pasar a rejectUnauthorized: true.
-        ssl: url.includes('localhost') || url.includes('127.0.0.1')
-          ? false
-          : { rejectUnauthorized: false },
+        ssl:
+          url.includes('localhost') || url.includes('127.0.0.1')
+            ? false
+            : { rejectUnauthorized: false },
         /*
           En Vercel cada instancia de la funcion abre su propio pool y varias
           instancias conviven bajo carga. Con dos pools por instancia, diez
@@ -51,7 +52,10 @@ export class BaseDatos implements OnModuleDestroy {
     };
 
     this.negocio = crear(config.get('DATABASE_URL_APP'), 'DATABASE_URL_APP');
-    this.identidad = crear(config.get('DATABASE_URL_AUTH'), 'DATABASE_URL_AUTH');
+    this.identidad = crear(
+      config.get('DATABASE_URL_AUTH'),
+      'DATABASE_URL_AUTH',
+    );
   }
 
   /*

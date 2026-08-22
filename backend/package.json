@@ -21,7 +21,8 @@
     "db:migrar": "node db/migrar.mjs up",
     "db:estado": "node db/migrar.mjs estado",
     "db:abajo": "node db/migrar.mjs abajo",
-    "db:nueva": "node db/migrar.mjs nueva"
+    "db:nueva": "node db/migrar.mjs nueva",
+    "db:humo": "node db/pruebas/humo.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

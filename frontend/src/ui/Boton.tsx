@@ -42,7 +42,7 @@ export function Boton({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center rounded-sm font-medium transition-colors',
+        'inline-flex items-center justify-center rounded-sm font-medium transition-all duration-150 ease-out active:scale-[0.98]',
         'disabled:cursor-not-allowed disabled:opacity-45',
         variantes[variante],
         tamanos[tamano],

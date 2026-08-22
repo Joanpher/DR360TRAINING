@@ -27,7 +27,9 @@ export class RegistroDto {
 
   @recortar()
   @IsString()
-  @Length(2, 80, { message: 'Los apellidos deben tener entre 2 y 80 caracteres.' })
+  @Length(2, 80, {
+    message: 'Los apellidos deben tener entre 2 y 80 caracteres.',
+  })
   apellidos!: string;
 
   @enMinusculas()
@@ -41,7 +43,9 @@ export class RegistroDto {
     empuja a la gente a escribir Educa2026! y reutilizarla en todas partes.
   */
   @IsString()
-  @MinLength(10, { message: 'La contrasena debe tener al menos 10 caracteres.' })
+  @MinLength(10, {
+    message: 'La contrasena debe tener al menos 10 caracteres.',
+  })
   @MaxLength(200)
   contrasena!: string;
 }

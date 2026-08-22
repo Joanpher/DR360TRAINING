@@ -6,32 +6,37 @@
 @import '@fontsource/ibm-plex-mono/600.css';
 
 /*
-  Tokens del sistema de diseno de DR360TRAINING.
-  El registro visual viene del libro de calificaciones: papel reglado,
-  tinta negra, correccion en rojo. Cada color significa algo.
+  Tokens del sistema de diseño de DR360TRAINING.
+  La identidad parte de los tres colores del logo oficial: azul institucional,
+  azul eléctrico y cian. Los neutros tienen un matiz azul para que producto y
+  sitio público compartan el mismo lenguaje visual.
 
-  Los colores de marca (pizarra) se redefinen en tiempo de ejecucion
-  por institucion, por eso son variables y no valores fijos en los componentes.
+  Se conservan los nombres históricos "pizarra" para no duplicar utilidades en
+  los componentes; ahora representan los roles cromáticos de la marca.
 */
 @theme {
-  --color-lienzo: #f5f6f4;
+  --color-lienzo: #f4f7fc;
   --color-superficie: #ffffff;
-  --color-regla: #d8dcd8;
-  --color-regla-fuerte: #b6beb8;
+  --color-regla: #d9e3f1;
+  --color-regla-fuerte: #b5c5dc;
 
-  --color-tinta: #14171a;
-  --color-tinta-media: #5a6470;
-  --color-tinta-suave: #8b9299;
+  --color-tinta: #0b1833;
+  --color-tinta-media: #506079;
+  --color-tinta-suave: #7b899f;
 
-  --color-pizarra: #1e5245;
-  --color-pizarra-fondo: #12302a;
-  --color-pizarra-vivo: #5fb79a;
-  --color-pizarra-tenue: #e7efeb;
+  --color-pizarra: #0055fc;
+  --color-pizarra-fondo: #012565;
+  --color-pizarra-vivo: #01d1d5;
+  --color-pizarra-tenue: #e7f0ff;
 
   --color-correccion: #a8352e;
   --color-correccion-tenue: #faedec;
   --color-aviso: #92610a;
   --color-aviso-tenue: #fbf3e4;
+  --color-entrega: #df6b1f;
+  --color-entrega-tenue: #fff0e5;
+  --color-exito: #237a4b;
+  --color-exito-tenue: #eaf6ef;
 
   --font-display: 'Archivo Variable', system-ui, sans-serif;
   --font-sans: 'Public Sans Variable', system-ui, sans-serif;
@@ -93,6 +98,20 @@
     );
   }
 
+  .fondo-marca {
+    background-image:
+      radial-gradient(circle at 92% 8%, rgba(1, 209, 213, 0.16), transparent 26%),
+      radial-gradient(circle at 7% 92%, rgba(0, 85, 252, 0.1), transparent 30%),
+      linear-gradient(135deg, #ffffff 0%, #f7faff 52%, #eef5ff 100%);
+  }
+
+  .trama-marca {
+    background-image:
+      linear-gradient(rgba(1, 37, 101, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(1, 37, 101, 0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
   .etiqueta-dato {
     font-family: var(--font-dato);
     font-size: 11px;
@@ -109,7 +128,7 @@
   .publico-boton:hover {
     transform: translateY(-2px);
     background-color: var(--color-pizarra-fondo);
-    box-shadow: 0 7px 0 rgba(18, 48, 42, 0.14);
+    box-shadow: 0 7px 0 rgba(1, 37, 101, 0.14);
   }
 
   .hero-entrada {
@@ -141,6 +160,36 @@
     transform: translateX(5px);
   }
 
+  .dialogo-fondo {
+    animation: dialogo-fondo 160ms ease-out both;
+  }
+
+  .dialogo-panel {
+    animation: dialogo-entrada 210ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .entrada-suave {
+    animation: entrada-suave 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  button,
+  a,
+  label,
+  input,
+  textarea,
+  select {
+    transition-duration: 160ms;
+    transition-property:
+      background-color, border-color, color, box-shadow, opacity, transform;
+    transition-timing-function: ease-out;
+  }
+
+  button:not(:disabled):active,
+  a:active,
+  label:active {
+    transform: scale(0.985);
+  }
+
   @keyframes entrada-publica {
     from {
       opacity: 0;
@@ -163,11 +212,45 @@
     }
   }
 
+  @keyframes dialogo-fondo {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes dialogo-entrada {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes entrada-suave {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-entrada,
   .hero-producto,
+  .dialogo-fondo,
+  .dialogo-panel,
+  .entrada-suave,
   [data-reveal] {
     animation: none;
     opacity: 1;
@@ -176,7 +259,19 @@
   }
 
   .publico-boton,
-  .grupo-fila {
+  .grupo-fila,
+  button,
+  a,
+  label,
+  input,
+  textarea,
+  select {
     transition: none;
+  }
+
+  button:not(:disabled):active,
+  a:active,
+  label:active {
+    transform: none;
   }
 }

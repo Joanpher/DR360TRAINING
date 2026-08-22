@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
+  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
@@ -11,6 +12,7 @@ import {
   Length,
   Matches,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -35,13 +37,64 @@ export const ROLES = [
   'invitado',
 ] as const;
 
+export const ROLES_DE_ALTA = [
+  'administrador',
+  'coordinador',
+  'docente',
+  'invitado',
+] as const;
+
+export class CrearPersonaDto {
+  @recortar()
+  @IsString()
+  @Length(2, 80, { message: 'El nombre debe tener entre 2 y 80 caracteres.' })
+  nombres!: string;
+
+  @recortar()
+  @IsString()
+  @Length(2, 80, {
+    message: 'Los apellidos deben tener entre 2 y 80 caracteres.',
+  })
+  apellidos!: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail({}, { message: 'Ese correo no parece valido.' })
+  @MaxLength(160)
+  correo!: string;
+
+  @IsOptional()
+  @vacioEsNulo()
+  @IsString()
+  @MaxLength(40)
+  telefono?: string | null;
+
+  @IsOptional()
+  @vacioEsNulo()
+  @IsString()
+  @Length(1, 40, { message: 'El codigo debe tener entre 1 y 40 caracteres.' })
+  codigo?: string | null;
+
+  @IsIn(ROLES_DE_ALTA, {
+    message:
+      'El rol inicial debe ser administrador, coordinador, instructor o invitado.',
+  })
+  rol!: string;
+}
+
 /*
   Los estados a los que administracion puede mover una membresia. 'invitada' no
   esta: a ese estado solo se llega creando una invitacion, y de el solo se sale
   aceptandola. Ponerlo aqui permitiria fabricar a mano una persona en un estado
   que el flujo de invitaciones da por suyo.
 */
-export const ESTADOS = ['activa', 'suspendida', 'retirada', 'egresada'] as const;
+export const ESTADOS = [
+  'activa',
+  'suspendida',
+  'retirada',
+  'egresada',
+] as const;
 
 export class ListarPersonasDto {
   @IsOptional()
@@ -85,15 +138,13 @@ export class ActualizarPersonaDto {
 
   @IsOptional()
   @IsUUID('4')
-  unidadAcademicaId?: string | null;
-
-  @IsOptional()
-  @IsUUID('4')
   sedeId?: string | null;
 
   @IsOptional()
   @vacioEsNulo()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'La fecha de ingreso no es valida.' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'La fecha de ingreso no es valida.',
+  })
   ingresoEn?: string | null;
 
   @IsOptional()

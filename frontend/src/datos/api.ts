@@ -56,6 +56,7 @@ export async function pedir<T>(
   reintento = false,
 ): Promise<T> {
   const { metodo = 'GET', cuerpo } = opciones
+  const esFormulario = typeof FormData !== 'undefined' && cuerpo instanceof FormData
 
   let respuesta: Response
   try {
@@ -63,10 +64,10 @@ export async function pedir<T>(
       method: metodo,
       credentials: 'include',
       headers: {
-        ...(cuerpo ? { 'Content-Type': 'application/json' } : {}),
+        ...(cuerpo && !esFormulario ? { 'Content-Type': 'application/json' } : {}),
         ...(acceso ? { Authorization: `Bearer ${acceso}` } : {}),
       },
-      body: cuerpo ? JSON.stringify(cuerpo) : undefined,
+      body: cuerpo ? (esFormulario ? cuerpo : JSON.stringify(cuerpo)) : undefined,
     })
   } catch {
     throw new ErrorApi(0, 'No se pudo conectar con el servidor.')
@@ -87,6 +88,31 @@ export async function pedir<T>(
   }
 
   return datos as T
+}
+
+/* Descarga autenticada para materiales del aula. Un enlace normal no sirve:
+   el token de acceso vive en memoria y debe viajar en la cabecera. */
+export async function pedirArchivo(ruta: string, reintento = false): Promise<Blob> {
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`/api${ruta}`, {
+      credentials: 'include',
+      headers: acceso ? { Authorization: `Bearer ${acceso}` } : {},
+    })
+  } catch {
+    throw new ErrorApi(0, 'No se pudo conectar con el servidor.')
+  }
+
+  if (respuesta.status === 401 && !reintento && renovar) {
+    if (await renovarUnaVez()) return pedirArchivo(ruta, true)
+  }
+
+  if (!respuesta.ok) {
+    const datos = await respuesta.json().catch(() => null)
+    throw new ErrorApi(respuesta.status, mensajeDeError(datos, respuesta.status))
+  }
+
+  return respuesta.blob()
 }
 
 /*

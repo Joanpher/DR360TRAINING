@@ -226,14 +226,14 @@ function DialogoCategoria({
 }) {
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
-  const [color, setColor] = useState('#2f6f4e')
+  const [color, setColor] = useState('#0055fc')
   const [orden, setOrden] = useState('0')
 
   useEffect(() => {
     if (!abierto) return
     setNombre(categoria?.nombre ?? '')
     setDescripcion(categoria?.descripcion ?? '')
-    setColor(categoria?.color ?? '#2f6f4e')
+    setColor(categoria?.color ?? '#0055fc')
     setOrden(String(categoria?.orden ?? siguienteOrden))
   }, [abierto, categoria, siguienteOrden])
 

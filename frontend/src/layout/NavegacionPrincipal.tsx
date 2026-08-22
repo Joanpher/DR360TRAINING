@@ -69,10 +69,13 @@ export function NavegacionPrincipal() {
       ref={contenedor}
       className="sticky top-13 z-20 border-b border-regla bg-superficie"
     >
-      <div className="mx-auto flex max-w-[1500px] items-stretch gap-0.5 px-6">
+      <div className="mx-auto flex max-w-[1500px] items-stretch gap-0.5 overflow-x-auto px-3 sm:px-6">
         {visibles.map((seccion) => {
           const Icono = seccion.icono
           const activa = pathname.startsWith(seccion.ruta)
+          const etiqueta = rol === 'estudiante' && seccion.ruta === '/cursos'
+            ? 'Mis cursos'
+            : seccion.etiqueta
 
           const clases = cn(
             'relative flex items-center gap-2 px-3 py-3 text-[13.5px] font-medium transition-colors',
@@ -94,7 +97,7 @@ export function NavegacionPrincipal() {
                   className={clases}
                 >
                   <Icono size={16} strokeWidth={1.5} />
-                  {seccion.etiqueta}
+                  {etiqueta}
                   <ChevronDown
                     size={13}
                     strokeWidth={1.75}
@@ -112,7 +115,7 @@ export function NavegacionPrincipal() {
           return (
             <NavLink key={seccion.ruta} to={seccion.ruta} className={clases}>
               <Icono size={16} strokeWidth={1.5} />
-              {seccion.etiqueta}
+              {etiqueta}
             </NavLink>
           )
         })}

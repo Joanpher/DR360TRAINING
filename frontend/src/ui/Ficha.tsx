@@ -14,7 +14,10 @@ export function Ficha({
 }) {
   return (
     <section
-      className={cn('bg-superficie border border-regla rounded-md', className)}
+      className={cn(
+        'rounded-md border border-regla bg-superficie transition-[border-color,box-shadow,transform] duration-200 ease-out',
+        className,
+      )}
     >
       {children}
     </section>

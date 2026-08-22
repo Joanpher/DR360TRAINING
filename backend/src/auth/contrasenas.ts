@@ -47,11 +47,16 @@ export async function verificarContrasena(
   const sal = Buffer.from(salB64, 'base64url');
   const esperado = Buffer.from(hashB64, 'base64url');
 
-  const calculado = await derivar(clara.normalize('NFKC'), sal, esperado.length, {
-    N: Number(n),
-    r: Number(r),
-    p: Number(p),
-  });
+  const calculado = await derivar(
+    clara.normalize('NFKC'),
+    sal,
+    esperado.length,
+    {
+      N: Number(n),
+      r: Number(r),
+      p: Number(p),
+    },
+  );
 
   return timingSafeEqual(calculado, esperado);
 }
@@ -62,5 +67,10 @@ export async function verificarContrasena(
   plataforma con instituciones reales es informacion que no toca dar.
 */
 export async function gastarTiempoDeVerificacion(): Promise<void> {
-  await derivar('contrasena-que-no-existe', randomBytes(LARGO_SAL), LARGO_HASH, COSTE);
+  await derivar(
+    'contrasena-que-no-existe',
+    randomBytes(LARGO_SAL),
+    LARGO_HASH,
+    COSTE,
+  );
 }

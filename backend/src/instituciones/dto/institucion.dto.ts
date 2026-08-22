@@ -95,7 +95,10 @@ export class ActualizarInstitucionDto {
 
   @IsOptional()
   @vacioEsNulo()
-  @IsUrl({ require_protocol: true }, { message: 'El sitio web debe empezar por https://' })
+  @IsUrl(
+    { require_protocol: true },
+    { message: 'El sitio web debe empezar por https://' },
+  )
   @MaxLength(300)
   sitioWeb?: string | null;
 
@@ -122,14 +125,19 @@ export class MarcaDto {
 
   @IsOptional()
   @vacioEsNulo()
-  @IsUrl({ require_protocol: true }, { message: 'La direccion del logo no es valida.' })
+  @IsUrl(
+    { require_protocol: true },
+    { message: 'La direccion del logo no es valida.' },
+  )
   @MaxLength(500)
   logoUrl?: string | null;
 }
 
 export class CrearDominioDto {
   @enMinusculas()
-  @Matches(/^[a-z0-9.-]+\.[a-z]{2,}$/, { message: 'Ese dominio no tiene un formato valido.' })
+  @Matches(/^[a-z0-9.-]+\.[a-z]{2,}$/, {
+    message: 'Ese dominio no tiene un formato valido.',
+  })
   @MaxLength(200)
   dominio!: string;
 

@@ -52,7 +52,7 @@ export function Dialogo({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-tinta/35 px-4 py-10"
+      className="dialogo-fondo fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-tinta/35 px-4 py-10"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) alCerrar()
       }}
@@ -62,7 +62,7 @@ export function Dialogo({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'w-full rounded-md border border-regla bg-superficie shadow-[0_24px_60px_-20px_rgba(20,23,26,0.45)]',
+          'dialogo-panel w-full rounded-md border border-regla bg-superficie shadow-[0_24px_60px_-20px_rgba(20,23,26,0.45)]',
           anchos[ancho],
         )}
       >

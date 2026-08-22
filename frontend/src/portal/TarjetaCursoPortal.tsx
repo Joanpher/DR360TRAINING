@@ -15,13 +15,13 @@ export function TarjetaCursoPortal({ curso }: { curso: Curso }) {
       to={`/cursos/${encodeURIComponent(curso.codigo)}`}
       className="group flex min-w-0 flex-col overflow-hidden rounded-md border border-regla bg-superficie transition-colors hover:border-pizarra focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pizarra/30"
     >
-      <div className="relative aspect-[16/7] overflow-hidden bg-lienzo">
+      <div className="relative aspect-video overflow-hidden border-b border-regla bg-lienzo p-2">
         {curso.imagenUrl ? (
           <img
             src={curso.imagenUrl}
             alt={`Portada de ${curso.nombre}`}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-tinta-suave">

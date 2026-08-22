@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BarChart3, BookOpen, CalendarCheck, Check, Clock3, Play, UsersRound } from 'lucide-react'
+import { ArrowRight, BarChart3, CalendarCheck, Check, Clock3, Play, UsersRound } from 'lucide-react'
 import { LlamadaFinal } from '../publico/SitioPublico'
+import { Marca } from '../ui/Marca'
 
 export function Landing() {
   return (
     <main>
-      <section className="overflow-hidden border-b border-regla bg-[#f7f8f5]">
+      <section className="overflow-hidden border-b border-regla bg-lienzo">
         <div className="mx-auto grid max-w-[1200px] items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:min-h-[650px] lg:grid-cols-[0.92fr_1.08fr] lg:py-24">
           <div className="hero-entrada">
             <p className="etiqueta-dato flex items-center gap-2 text-pizarra"><span className="h-2 w-2 bg-pizarra" />Plataforma académica integral</p>
@@ -42,7 +43,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="bg-[#12302a] text-white" data-reveal>
+      <section className="bg-pizarra-fondo text-white" data-reveal>
         <div className="mx-auto grid max-w-[1200px] lg:grid-cols-2">
           <div className="px-5 py-20 sm:px-8 lg:border-r lg:border-white/15 lg:py-24 lg:pr-20"><p className="etiqueta-dato text-pizarra-vivo">Una visión compartida</p><h2 className="mt-5 font-display text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-5xl">Cada persona ve exactamente lo que necesita.</h2><Link to="/soluciones" className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-pizarra-vivo hover:text-white">Explorar soluciones <ArrowRight size={15} /></Link></div>
           <div className="divide-y divide-white/15 px-5 sm:px-8 lg:py-10 lg:pl-20">{[
@@ -60,16 +61,16 @@ export function Landing() {
 function VistaProducto() {
   return (
     <div className="hero-producto relative" aria-label="Vista previa de la plataforma DR360TRAINING">
-      <div className="absolute -left-5 top-10 hidden h-20 w-20 border border-[#a9b8ad] bg-[#dce8df] lg:block" />
-      <div className="relative border border-[#afbbb2] bg-white shadow-[10px_10px_0_#c8d4cb]">
-        <div className="flex h-12 items-center border-b border-regla bg-[#12302a] px-4 text-white"><BookOpen size={17} /><span className="ml-2 text-sm font-semibold">DR360TRAINING</span><span className="ml-auto font-dato text-[9px] uppercase tracking-widest text-white/45">Inicio</span></div>
+      <div className="absolute -left-5 top-10 hidden h-20 w-20 border border-pizarra-vivo/50 bg-pizarra-vivo/15 lg:block" />
+      <div className="relative border border-regla-fuerte bg-white shadow-[10px_10px_0_#cbd9ec]">
+        <div className="flex h-12 items-center border-b border-regla bg-pizarra-fondo px-4 text-white"><Marca tono="claro" /><span className="ml-auto font-dato text-[9px] uppercase tracking-widest text-white/45">Inicio</span></div>
         <div className="p-5 sm:p-7"><div className="flex items-end justify-between border-b border-regla pb-5"><div><p className="etiqueta-dato text-tinta-suave">Martes, 19 de agosto</p><p className="mt-2 font-display text-xl font-bold sm:text-2xl">Buen día, Joanpher</p></div><span className="font-dato text-xs text-pizarra">82%</span></div>
           <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_170px]"><div className="divide-y divide-regla border-y border-regla">{[
             ['08:00', 'Diseño de interfaces', 'Aula B-204'],
             ['11:30', 'Arquitectura de software', 'Clase en vivo'],
             ['15:00', 'Gestión de proyectos', 'Entrega hoy'],
           ].map(([hora, titulo, detalle]) => <div key={hora} className="flex gap-4 py-4"><span className="font-dato text-xs text-tinta-suave">{hora}</span><div><p className="text-sm font-semibold">{titulo}</p><p className="mt-1 text-xs text-tinta-media">{detalle}</p></div></div>)}</div>
-            <div className="bg-[#e8eee9] p-4"><Clock3 size={18} className="text-pizarra" /><p className="etiqueta-dato mt-5 text-tinta-suave">Próxima clase</p><p className="mt-2 font-display text-2xl font-bold">24 min</p><button className="mt-5 flex h-9 w-full items-center justify-center gap-2 bg-pizarra text-xs font-semibold text-white"><Play size={13} />Entrar</button></div>
+            <div className="bg-pizarra-tenue p-4"><Clock3 size={18} className="text-pizarra" /><p className="etiqueta-dato mt-5 text-tinta-suave">Próxima clase</p><p className="mt-2 font-display text-2xl font-bold">24 min</p><button className="mt-5 flex h-9 w-full items-center justify-center gap-2 bg-pizarra text-xs font-semibold text-white"><Play size={13} />Entrar</button></div>
           </div>
         </div>
       </div>

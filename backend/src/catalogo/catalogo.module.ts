@@ -1,21 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AcademicoControlador } from './academico.controlador';
-import { AnosServicio } from './anos.servicio';
-import { AsignaturasServicio } from './asignaturas.servicio';
-import { GradosServicio } from './grados.servicio';
-import { SeccionesServicio } from './secciones.servicio';
+import { CatalogoControlador } from './catalogo.controlador';
+import { CategoriasServicio } from './categorias.servicio';
+import { CursosServicio } from './cursos.servicio';
 import { SedesServicio } from './sedes.servicio';
-import { UnidadesServicio } from './unidades.servicio';
+import { PortalControlador } from './portal.controlador';
 
 @Module({
-  controllers: [AcademicoControlador],
-  providers: [
-    AnosServicio,
-    GradosServicio,
-    AsignaturasServicio,
-    SeccionesServicio,
-    SedesServicio,
-    UnidadesServicio,
-  ],
+  controllers: [CatalogoControlador, PortalControlador],
+  providers: [CursosServicio, CategoriasServicio, SedesServicio],
 })
-export class AcademicoModule {}
+export class CatalogoModule {}
