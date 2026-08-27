@@ -36,7 +36,7 @@ export function Acceso() {
     <MarcoAcceso
       entrada="Iniciar sesión"
       titulo="Bienvenido de nuevo"
-      descripcion="Usa tu correo institucional o tu matrícula para continuar."
+      descripcion="Ingresa a tu cuenta para continuar."
       pie={
         <p className="text-[13px] leading-relaxed text-tinta-media">
           ¿Administras una institución?{' '}

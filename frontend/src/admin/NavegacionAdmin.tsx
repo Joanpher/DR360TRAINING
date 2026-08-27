@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom'
 import {
   BookOpen,
+  Award,
   Building2,
   LayoutGrid,
   MapPin,
   ScrollText,
+  ShoppingCart,
   Send,
   Tags,
   UserRoundCheck,
@@ -49,6 +51,13 @@ const grupos: Grupo[] = [
       { etiqueta: 'Inscripciones', ruta: '/admin/inscripciones', icono: UserRoundCheck },
       { etiqueta: 'Usuarios', ruta: '/admin/personas', icono: Users },
       { etiqueta: 'Invitaciones', ruta: '/admin/invitaciones', icono: Send },
+    ],
+  },
+  {
+    titulo: 'Operaciones',
+    entradas: [
+      { etiqueta: 'POS', ruta: '/admin/pos', icono: ShoppingCart },
+      { etiqueta: 'Certificados', ruta: '/admin/certificados', icono: Award },
     ],
   },
   {

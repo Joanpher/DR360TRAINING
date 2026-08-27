@@ -275,3 +275,33 @@
     transform: none;
   }
 }
+
+/* El documento se dibuja en pantalla antes de imprimirlo. Al imprimir, la hoja
+   es exactamente el certificado: sin fondo, controles ni márgenes del navegador. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .certificado-controles {
+    display: none !important;
+  }
+
+  .certificado-pagina {
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .certificado-documento {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+}

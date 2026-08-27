@@ -41,3 +41,15 @@ services:
       # el proxy de Vercel. A traves del proxy el navegador nunca manda Origin.
       - key: ORIGEN_WEB
         sync: false
+      # Clases en vivo. Con el dominio publico por defecto el sistema funciona,
+      # pero la sala la protege solo su nombre aleatorio. Rellenar el secreto en
+      # el panel cuando haya un Jitsi propio con tokens: entonces la entrada la
+      # firma esta API y quien no traiga token no pasa.
+      - key: JITSI_DOMINIO
+        value: meet.jit.si
+      - key: JITSI_APP_ID
+        value: dr360training
+      - key: JITSI_APP_SECRETO
+        sync: false
+      - key: JITSI_TOKEN_MINUTOS
+        value: 240

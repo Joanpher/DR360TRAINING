@@ -1,10 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import {
-  ChartColumn,
-  MessageSquare,
-  UserRound,
-  Video,
-} from 'lucide-react'
+import { ChartColumn, MessageSquare, UserRound } from 'lucide-react'
 import { Shell } from '../layout/Shell'
 import { Acceso } from '../paginas/Acceso'
 import { Landing } from '../paginas/Landing'
@@ -22,6 +17,8 @@ import { Inicio } from '../paginas/Inicio'
 import { Cursos } from '../paginas/Cursos'
 import { Curso } from '../paginas/Curso'
 import { Calendario } from '../paginas/Calendario'
+import { Clases } from '../paginas/Clases'
+import { Sala } from '../paginas/Sala'
 import { Pendiente } from '../paginas/Pendiente'
 import { LayoutAdmin } from '../admin/LayoutAdmin'
 import { Resumen } from '../admin/paginas/Resumen'
@@ -36,6 +33,9 @@ import { CrearInscripcion } from '../admin/paginas/CrearInscripcion'
 import { Sedes } from '../admin/paginas/Sedes'
 import { Institucion } from '../admin/paginas/Institucion'
 import { Bitacora } from '../admin/paginas/Bitacora'
+import { Pos } from '../admin/paginas/Pos'
+import { Certificados } from '../admin/paginas/Certificados'
+import { ImprimirCertificado } from '../admin/paginas/ImprimirCertificado'
 import { Marca } from '../ui/Marca'
 import { useVista } from './rol'
 import { useSesion } from './sesion'
@@ -170,6 +170,8 @@ function RutasAdmin() {
         <Route path="/admin/sedes" element={<Sedes />} />
         <Route path="/admin/institucion" element={<Institucion />} />
         <Route path="/admin/bitacora" element={<Bitacora />} />
+        <Route path="/admin/pos" element={<Pos />} />
+        <Route path="/admin/certificados" element={<Certificados />} />
         <Route
           path="/perfil"
           element={
@@ -181,6 +183,8 @@ function RutasAdmin() {
           }
         />
       </Route>
+
+      <Route path="/admin/certificados/:id/imprimir" element={<ImprimirCertificado />} />
 
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
@@ -198,16 +202,7 @@ function RutasAprendizaje() {
         <Route path="/cursos" element={<Cursos />} />
         <Route path="/cursos/:codigo" element={<Curso />} />
         <Route path="/calendario" element={<Calendario />} />
-        <Route
-          path="/clases"
-          element={
-            <Pendiente
-              titulo="Clases"
-              icono={Video}
-              texto="Programación, sala en vivo, asistencia y grabaciones. Se conecta a Jitsi a través del módulo de reuniones del backend."
-            />
-          }
-        />
+        <Route path="/clases" element={<Clases />} />
         <Route
           path="/mensajes"
           element={
@@ -239,6 +234,12 @@ function RutasAprendizaje() {
           }
         />
       </Route>
+
+      {/*
+        Fuera del Shell a proposito: una videollamada con la barra de navegacion
+        del sitio alrededor es una videollamada que nadie mira.
+      */}
+      <Route path="/clases/:id" element={<Sala />} />
 
       <Route path="*" element={<Navigate to="/inicio" replace />} />
     </Routes>

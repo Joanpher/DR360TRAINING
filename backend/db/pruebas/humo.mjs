@@ -285,6 +285,116 @@ try {
   // Las operaciones administrativas que siguen necesitan recuperar al propietario.
   await app.query(`select set_config('app.usuario_id', $1, true)`, [usuarioId])
 
+  // --- Clases en vivo: quien convoca, quien entra y cuando -----------------
+  // El insert con "returning" es la trampa numero 2 de siempre: tiene que pasar
+  // tambien la politica de select, o convocar una clase fallaria sin decir por
+  // que.
+  const { rows: reunion } = await app.query(
+    `insert into reuniones
+       (institucion_id, curso_id, sala, titulo, anfitrion_membresia_id,
+        programada_para, estado)
+     values ($1, $2, 'dr360-' || encode(gen_random_bytes(16), 'hex'),
+             'Clase de prueba', app.mi_membresia(),
+             now() + interval '2 hours', 'programada')
+     returning id`,
+    [institucionId, cursoId])
+  const reunionId = reunion[0]?.id
+  afirmar(!!reunionId, 'el instructor convoca una clase en vivo')
+
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [alta[0].usuario_id])
+
+  let convocaAlumno = false
+  try {
+    await app.query('savepoint reunion_alumno')
+    const intento = await app.query(
+      `insert into reuniones
+         (institucion_id, curso_id, sala, titulo, anfitrion_membresia_id, estado)
+       values ($1, $2, 'dr360-' || encode(gen_random_bytes(16), 'hex'),
+               'Clase pirata', app.mi_membresia(), 'programada')
+       returning id`,
+      [institucionId, cursoId])
+    convocaAlumno = intento.rowCount > 0
+    await app.query('release savepoint reunion_alumno')
+  } catch {
+    convocaAlumno = false
+    await app.query('rollback to savepoint reunion_alumno')
+  }
+  afirmar(!convocaAlumno, 'el alumnado no puede convocar clases')
+
+  const { rows: cerrada } = await app.query(
+    `select app.reunion_abierta($1) as abierta`, [reunionId])
+  afirmar(cerrada[0].abierta === false, 'una clase programada tiene la sala cerrada')
+
+  // Entrar antes de que el instructor abra la sala se estrella contra la
+  // politica, no contra un if del servicio.
+  let entraAntes = false
+  try {
+    await app.query('savepoint entrada_temprana')
+    const intento = await app.query(
+      `insert into reunion_asistencias
+         (institucion_id, curso_id, reunion_id, membresia_id)
+       values ($1, $2, $3, app.mi_membresia()) returning id`,
+      [institucionId, cursoId, reunionId])
+    entraAntes = intento.rowCount > 0
+    await app.query('release savepoint entrada_temprana')
+  } catch {
+    entraAntes = false
+    await app.query('rollback to savepoint entrada_temprana')
+  }
+  afirmar(!entraAntes, 'no se entra a una sala que todavia no se ha abierto')
+
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [usuarioId])
+  await app.query(
+    `update reuniones set estado = 'en_curso', iniciada_en = now() where id = $1`,
+    [reunionId])
+  await app.query(
+    `insert into reunion_asistencias
+       (institucion_id, curso_id, reunion_id, membresia_id, es_anfitrion)
+     values ($1, $2, $3, app.mi_membresia(), true)`,
+    [institucionId, cursoId, reunionId])
+
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [alta[0].usuario_id])
+  const { rows: entrada } = await app.query(
+    `insert into reunion_asistencias
+       (institucion_id, curso_id, reunion_id, membresia_id)
+     values ($1, $2, $3, app.mi_membresia()) returning id`,
+    [institucionId, cursoId, reunionId])
+  afirmar(!!entrada[0]?.id, 'con la sala abierta, el alumnado entra')
+
+  // Reconectar no abre una fila nueva: suma una vuelta a la que ya hay.
+  await app.query(
+    `insert into reunion_asistencias
+       (institucion_id, curso_id, reunion_id, membresia_id)
+     values ($1, $2, $3, app.mi_membresia())
+     on conflict (reunion_id, membresia_id) do update set
+       entradas = reunion_asistencias.entradas + 1, salida_en = null`,
+    [institucionId, cursoId, reunionId])
+  const { rows: propias } = await app.query(
+    `select count(*)::int as n, max(entradas)::int as entradas
+       from reunion_asistencias where reunion_id = $1`, [reunionId])
+  afirmar(propias[0].n === 1, 'el alumnado solo ve su propia fila de asistencia')
+  afirmar(propias[0].entradas === 2, 'reconectar suma una entrada, no una fila')
+
+  // Y aun asi la pantalla puede decir cuanta gente hay: eso lo resuelve la
+  // funcion de conteo, que no revela quien.
+  const { rows: conteo } = await app.query(
+    `select total, presentes from app.reunion_conteo($1)`, [reunionId])
+  afirmar(conteo[0].total === 2, 'el conteo de la sala ve a los dos participantes')
+
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [usuarioId])
+
+  let borraClase = true
+  try {
+    await app.query('savepoint borrar_reunion')
+    await app.query(`delete from reunion_asistencias where id is not null`)
+    await app.query(`delete from reuniones where id is not null`)
+    await app.query('release savepoint borrar_reunion')
+  } catch {
+    borraClase = false
+    await app.query('rollback to savepoint borrar_reunion')
+  }
+  afirmar(!borraClase, 'ni las clases ni la asistencia se pueden borrar')
+
   let descuentoAbusivo = false
   try {
     await app.query('savepoint s3')

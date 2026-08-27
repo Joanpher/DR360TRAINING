@@ -14,7 +14,6 @@ import {
   Trash2,
 } from 'lucide-react'
 import {
-  DIAS_SEMANA,
   fechaLegible,
   horarioLegible,
   nombreEstadoCurso,
@@ -26,6 +25,7 @@ import { pedir } from '../datos/api'
 import { useConsulta, useGuardar } from '../datos/consulta'
 import { prepararPortadaCompleta } from '../datos/portada'
 import { AulaCurso } from '../portal/AulaCurso'
+import { ClasesCurso } from '../portal/ClasesCurso'
 import { AulaEstudiante } from '../portal/AulaEstudiante'
 import { CalificacionesCurso, TareasCurso } from '../portal/CursoModulos'
 import { EvaluacionesCurso } from '../portal/EvaluacionesCurso'
@@ -110,7 +110,7 @@ export function Curso() {
       {pestana === 'Tareas' && <TareasCurso curso={curso} esDocente={rol === 'docente'} alAbrirAula={() => setPestana('Aula')} />}
       {pestana === 'Exámenes' && <EvaluacionesCurso curso={curso} esDocente={rol === 'docente'} />}
       {pestana === 'Calificaciones' && <CalificacionesCurso curso={curso} esDocente={rol === 'docente'} />}
-      {pestana === 'Clases' && <Clases curso={curso} />}
+      {pestana === 'Clases' && <ClasesCurso curso={curso} />}
       {pestana === 'Foro' && <ModuloVacio icono={MessagesSquare} titulo="No hay conversaciones" texto="Este curso todavía no tiene temas publicados." />}
       {pestana === 'Personas' && <Personas curso={curso} estudiantes={estudiantes} esDocente={rol === 'docente'} />}
     </div>
@@ -299,32 +299,6 @@ function DatoCurso({ etiqueta, valor }: { etiqueta: string; valor: string }) {
       <dt className="etiqueta-dato text-tinta-suave">{etiqueta}</dt>
       <dd className="mt-2 break-words text-[13px] font-medium leading-relaxed text-tinta">{valor}</dd>
     </dl>
-  )
-}
-
-function Clases({ curso }: { curso: CursoDato }) {
-  if (curso.horarios.length === 0) {
-    return <ModuloVacio icono={CalendarClock} titulo="No hay horario" texto="Este curso todavía no tiene bloques de clase programados." />
-  }
-
-  return (
-    <Ficha>
-      <FichaCabecera titulo="Horario semanal" descripcion={`${fechaLegible(curso.iniciaEn)} – ${fechaLegible(curso.terminaEn)}`} />
-      <ul>
-        {curso.horarios.map((horario) => (
-          <li key={`${horario.diaSemana}-${horario.horaInicio}`} className="flex flex-wrap items-center gap-4 border-b border-regla px-5 py-4 last:border-b-0">
-            <CalendarClock size={18} className="text-pizarra" />
-            <div className="min-w-36">
-              <p className="text-[14px] font-semibold text-tinta">{DIAS_SEMANA[horario.diaSemana - 1]?.largo}</p>
-              <p className="font-dato text-[12px] text-tinta-media">{horario.horaInicio} – {horario.horaFin}</p>
-            </div>
-            <p className="ml-auto flex items-center gap-2 text-[13px] text-tinta-media">
-              <MapPin size={14} /> {[curso.sede, curso.aula].filter(Boolean).join(' · ') || nombreModalidad[curso.modalidad]}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </Ficha>
   )
 }
 

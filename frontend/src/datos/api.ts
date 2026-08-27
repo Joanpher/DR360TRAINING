@@ -90,6 +90,27 @@ export async function pedir<T>(
   return datos as T
 }
 
+/*
+  Un aviso de ida y sin vuelta, para cuando la pagina se esta cerrando. Con un
+  fetch normal el navegador cancela la peticion en cuanto muere el documento;
+  keepalive la deja terminar. sendBeacon serviria si no fuera porque no admite
+  cabeceras, y el token de acceso viaja en Authorization.
+
+  No devuelve nada ni reintenta: quien la usa ya no esta ahi para enterarse.
+*/
+export function avisar(ruta: string): void {
+  try {
+    void fetch(`/api${ruta}`, {
+      method: 'POST',
+      credentials: 'include',
+      keepalive: true,
+      headers: acceso ? { Authorization: `Bearer ${acceso}` } : {},
+    }).catch(() => undefined)
+  } catch {
+    // La pestana se esta yendo: no hay a quien contarle el fallo.
+  }
+}
+
 /* Descarga autenticada para materiales del aula. Un enlace normal no sirve:
    el token de acceso vive en memoria y debe viajar en la cabecera. */
 export async function pedirArchivo(ruta: string, reintento = false): Promise<Blob> {

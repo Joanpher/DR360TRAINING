@@ -41,11 +41,45 @@ const secciones: Seccion[] = [
 
 export function NavegacionPrincipal() {
   const { rol } = useRol()
+  /*
+    El punto rojo sobre "Clases". Es lo que hace que una llamada aparezca sola
+    en la pantalla de quien la esta esperando, en vez de tener que avisar por
+    fuera de la plataforma de que ya se puede entrar.
+  */
+  const { enVivo } = usePortal()
   const { pathname } = useLocation()
   const [abierto, setAbierto] = useState<string | null>(null)
   const contenedor = useRef<HTMLDivElement>(null)
+  const boton = useRef<HTMLButtonElement>(null)
+  /*
+    La barra scrollea en horizontal cuando no caben las secciones, y ese
+    overflow recorta cualquier panel absoluto que cuelgue de ella. Por eso el
+    desplegable se posiciona fijo: medimos el boton al abrirlo y lo anclamos
+    debajo, fuera del alcance del recorte.
+  */
+  const [ancla, setAncla] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => setAbierto(null), [pathname])
+
+  useEffect(() => {
+    if (!abierto) return
+    function medir() {
+      const caja = boton.current?.getBoundingClientRect()
+      if (!caja) return
+      const ancho = Math.min(560, window.innerWidth - 24)
+      setAncla({
+        top: caja.bottom,
+        left: Math.max(12, Math.min(caja.left, window.innerWidth - ancho - 12)),
+      })
+    }
+    medir()
+    window.addEventListener('resize', medir)
+    window.addEventListener('scroll', medir, true)
+    return () => {
+      window.removeEventListener('resize', medir)
+      window.removeEventListener('scroll', medir, true)
+    }
+  }, [abierto])
 
   useEffect(() => {
     function fuera(e: MouseEvent) {
@@ -88,8 +122,9 @@ export function NavegacionPrincipal() {
           if (seccion.panel) {
             const esteAbierto = abierto === seccion.panel
             return (
-              <div key={seccion.ruta} className="relative flex">
+              <div key={seccion.ruta} className="flex">
                 <button
+                  ref={boton}
                   onClick={() =>
                     setAbierto(esteAbierto ? null : seccion.panel!)
                   }
@@ -107,7 +142,7 @@ export function NavegacionPrincipal() {
                     )}
                   />
                 </button>
-                {esteAbierto && <PanelCursos />}
+                {esteAbierto && ancla && <PanelCursos ancla={ancla} />}
               </div>
             )
           }
@@ -116,6 +151,19 @@ export function NavegacionPrincipal() {
             <NavLink key={seccion.ruta} to={seccion.ruta} className={clases}>
               <Icono size={16} strokeWidth={1.5} />
               {etiqueta}
+              {seccion.ruta === '/clases' && enVivo.length > 0 && (
+                <span
+                  title={
+                    enVivo.length === 1
+                      ? `${enVivo[0].cursoCodigo} esta en vivo`
+                      : `${enVivo.length} clases en vivo`
+                  }
+                  className="ml-0.5 inline-flex items-center gap-1 rounded-xs border border-correccion/30 bg-correccion-tenue px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-correccion"
+                >
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-correccion" />
+                  {enVivo.length > 1 ? enVivo.length : 'En vivo'}
+                </span>
+              )}
             </NavLink>
           )
         })}
@@ -124,13 +172,16 @@ export function NavegacionPrincipal() {
   )
 }
 
-function PanelCursos() {
+function PanelCursos({ ancla }: { ancla: { top: number; left: number } }) {
   const { cursos, cargando } = usePortal()
 
   return (
-    <div className="absolute left-0 top-full z-30 w-[560px] border border-regla bg-superficie shadow-[0_12px_28px_-12px_rgba(20,23,26,0.28)] rounded-md">
-      <div className="grid grid-cols-[1fr_200px]">
-        <div className="border-r border-regla p-4">
+    <div
+      style={{ top: ancla.top, left: ancla.left }}
+      className="fixed z-30 w-[min(560px,calc(100vw-24px))] border border-regla bg-superficie shadow-[0_12px_28px_-12px_rgba(20,23,26,0.28)] rounded-md"
+    >
+      <div className="grid grid-cols-[1fr_200px] max-sm:grid-cols-1">
+        <div className="border-r border-regla p-4 max-sm:border-b max-sm:border-r-0">
           <p className="etiqueta-dato mb-3 text-tinta-suave">
             Mis cursos · {cursos.length}
           </p>

@@ -44,6 +44,20 @@ del dominio de Vercel.
    maestro— tampoco: solo lo usa `db/migrar.mjs` desde tu maquina, y lo que no
    esta subido no se puede filtrar.
 
+   Para las clases en vivo, ademas:
+
+   | Variable             | Valor                                             |
+   | -------------------- | ------------------------------------------------- |
+   | `JITSI_DOMINIO`      | `meet.jit.si` o el dominio de tu Jitsi             |
+   | `JITSI_APP_ID`       | el `app_id` del `prosody.cfg.lua` de tu servidor   |
+   | `JITSI_APP_SECRETO`  | el `app_secret` del mismo archivo                  |
+
+   Sin `JITSI_APP_SECRETO` el sistema funciona igual contra `meet.jit.si`, y la
+   sala la protege solo su nombre aleatorio de 32 caracteres. Sirve para probar;
+   para clases reales no, porque quien reenvie el enlace reparte el acceso. Con
+   un Jitsi propio y tokens activados, la entrada la firma la API sala por sala
+   y quien no traiga token no pasa. La API lo avisa al arrancar.
+
 3. Ajustar `region` en `render.yaml` a la region de RDS si no es `virginia`.
    Cada consulta cruza esa distancia.
 4. Anotar la URL que asigna Render, del estilo `https://dr360training.onrender.com`.
