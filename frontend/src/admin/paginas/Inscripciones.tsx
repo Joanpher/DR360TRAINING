@@ -7,6 +7,7 @@ import {
   KeyRound,
   Receipt,
   UserPlus,
+  UserRoundCheck,
   Users,
 } from 'lucide-react'
 import { AreaTexto } from '../../ui/AreaTexto'
@@ -106,6 +107,8 @@ export function Inscripciones() {
 
   return (
     <Pantalla
+      icono={UserRoundCheck}
+      color="menta"
       titulo="Inscripciones"
       descripcion="Quién está en cada curso. Al inscribir a alguien nuevo el sistema le emite su matrícula y su clave, y genera el cargo por el precio del curso."
       datos={datos}

@@ -44,9 +44,9 @@ export function Campo({
           id={id}
           type={tipoFinal}
           className={cn(
-            'h-11 w-full rounded-sm border bg-superficie text-sm text-tinta',
-            'placeholder:text-tinta-suave',
-            'focus:border-pizarra focus:outline-none focus:ring-2 focus:ring-pizarra/15',
+            'h-11 w-full rounded-sm border bg-superficie text-sm text-tinta shadow-[0_1px_2px_rgba(11,24,51,0.04)_inset]',
+            'placeholder:text-tinta-suave hover:border-tinta-suave',
+            'focus:border-pizarra focus:outline-none focus:ring-[3px] focus:ring-pizarra/18',
             Icono ? 'pl-9' : 'pl-3',
             esClave ? 'pr-10' : 'pr-3',
             error ? 'border-correccion' : 'border-regla-fuerte',

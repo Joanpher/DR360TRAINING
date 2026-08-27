@@ -29,27 +29,78 @@
   --color-pizarra-vivo: #01d1d5;
   --color-pizarra-tenue: #e7f0ff;
 
-  --color-correccion: #a8352e;
-  --color-correccion-tenue: #faedec;
-  --color-aviso: #92610a;
-  --color-aviso-tenue: #fbf3e4;
-  --color-entrega: #df6b1f;
-  --color-entrega-tenue: #fff0e5;
-  --color-exito: #237a4b;
-  --color-exito-tenue: #eaf6ef;
+  --color-correccion: #d02f26;
+  --color-correccion-tenue: #ffeceb;
+  --color-aviso: #b07206;
+  --color-aviso-tenue: #fff5e0;
+  --color-entrega: #e8620f;
+  --color-entrega-tenue: #fff0e4;
+  --color-exito: #128a52;
+  --color-exito-tenue: #e6f8ee;
+
+  /*
+    Rotuladores. La paleta de arriba dice si algo va bien o mal; esta no dice
+    nada, solo distingue. Sirve para que un icono, una cifra o una tarjeta se
+    reconozcan por su color antes de leerse -que es como se usa de verdad un
+    panel que se abre veinte veces al dia-, sin robarle el rojo a los errores
+    ni el azul a la marca.
+
+    Cada rotulador trae tres tonos: el trazo, el fondo del subrayado y el borde.
+  */
+  --color-rotulador-azul: #0055fc;
+  --color-rotulador-azul-tenue: #e7f0ff;
+  --color-rotulador-azul-borde: #b9d2ff;
+
+  --color-rotulador-violeta: #6d3ce0;
+  --color-rotulador-violeta-tenue: #f1ebff;
+  --color-rotulador-violeta-borde: #d6c6ff;
+
+  --color-rotulador-cian: #0693a8;
+  --color-rotulador-cian-tenue: #e2f7fa;
+  --color-rotulador-cian-borde: #a9e4ec;
+
+  --color-rotulador-menta: #128a52;
+  --color-rotulador-menta-tenue: #e6f8ee;
+  --color-rotulador-menta-borde: #aee6c8;
+
+  --color-rotulador-ambar: #b07206;
+  --color-rotulador-ambar-tenue: #fff5e0;
+  --color-rotulador-ambar-borde: #f5dca5;
+
+  --color-rotulador-coral: #dc4a3d;
+  --color-rotulador-coral-tenue: #ffeeec;
+  --color-rotulador-coral-borde: #ffc9c3;
+
+  --color-rotulador-magenta: #c2277f;
+  --color-rotulador-magenta-tenue: #fdeaf4;
+  --color-rotulador-magenta-borde: #f7c2de;
 
   --font-display: 'Archivo Variable', system-ui, sans-serif;
   --font-sans: 'Public Sans Variable', system-ui, sans-serif;
   --font-dato: 'IBM Plex Mono', ui-monospace, monospace;
 
-  /* Formas rectas: aunque alguien escriba rounded-2xl, no se redondea. */
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 3px;
-  --radius-xl: 3px;
-  --radius-2xl: 4px;
-  --radius-3xl: 4px;
+  /*
+    Antes todo esto valia 2px: el sistema se dibujaba a escuadra a proposito.
+    Se ablanda porque quien lo usa a diario -estudiantes, instructores, la
+    persona de caja- no lee una hoja de calculo, y una interfaz enteramente
+    recta se le hace dura. La escala sigue siendo corta: se redondea lo que se
+    toca (botones, campos, tarjetas), no la pagina entera.
+  */
+  --radius-xs: 4px;
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  --radius-3xl: 28px;
+
+  /*
+    Elevacion. Tres alturas y ninguna mas: una tarjeta apoyada, algo que
+    responde al raton y algo que de verdad flota sobre el resto.
+  */
+  --shadow-apoyo: 0 1px 2px rgba(11, 24, 51, 0.05), 0 4px 12px -6px rgba(11, 24, 51, 0.09);
+  --shadow-realce: 0 2px 6px rgba(11, 24, 51, 0.07), 0 14px 30px -14px rgba(11, 24, 51, 0.22);
+  --shadow-flotante: 0 24px 60px -20px rgba(11, 24, 51, 0.45);
 }
 
 @layer base {
@@ -118,6 +169,44 @@
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  /*
+    Superficies con temperatura. El panel era blanco sobre blanco de punta a
+    punta; estos fondos separan de un vistazo lo que es cabecera de lo que es
+    contenido, sin meter una regla mas.
+  */
+  .fondo-panel {
+    background-image:
+      radial-gradient(circle at 100% 0%, rgba(1, 209, 213, 0.1), transparent 34%),
+      radial-gradient(circle at 0% 100%, rgba(0, 85, 252, 0.07), transparent 38%),
+      linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  }
+
+  .fondo-cabecera {
+    background-image: linear-gradient(
+      120deg,
+      var(--color-pizarra-fondo) 0%,
+      #0a3fa8 46%,
+      var(--color-pizarra) 100%
+    );
+  }
+
+  /*
+    Una tarjeta que se puede pulsar tiene que parecerlo antes de que el raton
+    llegue. Se levanta un pelo y enciende su color; no cambia de tamano, para
+    que la rejilla no se mueva.
+  */
+  .tarjeta-viva {
+    transition:
+      transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 200ms ease-out,
+      border-color 200ms ease-out;
+  }
+
+  .tarjeta-viva:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-realce);
   }
 
   .publico-boton {
@@ -260,6 +349,8 @@
 
   .publico-boton,
   .grupo-fila,
+  .tarjeta-viva,
+  .tarjeta-viva:hover,
   button,
   a,
   label,

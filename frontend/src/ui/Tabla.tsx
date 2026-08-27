@@ -12,7 +12,9 @@ export function Tabla({ children }: { children: ReactNode }) {
 export function Encabezado({ children }: { children: ReactNode }) {
   return (
     <thead>
-      <tr className="border-b border-regla">{children}</tr>
+      <tr className="border-b border-regla bg-linear-to-b from-lienzo to-[#fbfdff]">
+        {children}
+      </tr>
     </thead>
   )
 }
@@ -46,8 +48,8 @@ export function Fila({
     <tr
       onClick={onClick}
       className={cn(
-        'border-b border-regla last:border-b-0',
-        onClick && 'cursor-pointer hover:bg-lienzo',
+        'border-b border-regla transition-colors last:border-b-0 hover:bg-[#f8fbff]',
+        onClick && 'cursor-pointer',
       )}
     >
       {children}

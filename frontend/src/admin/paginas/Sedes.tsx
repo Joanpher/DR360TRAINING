@@ -38,6 +38,8 @@ export function Sedes() {
 
   return (
     <Pantalla
+      icono={MapPin}
+      color="coral"
       titulo="Sedes"
       descripcion="Los recintos de la institución. Cada curso presencial y cada persona pueden pertenecer a una."
       datos={datos}

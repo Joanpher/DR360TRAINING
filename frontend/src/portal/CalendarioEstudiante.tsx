@@ -36,12 +36,17 @@ import {
   type TareaCalendario,
 } from './aula'
 import {
+  DIAS_REJILLA,
+  claveFecha,
+  formatoDiaCompleto,
+  inicioDia,
+  rangoCalendario,
+} from './calendario'
+import {
   fechaEvaluacion,
   type EvaluacionCalendario,
   type RespuestaCalendarioEvaluaciones,
 } from './evaluaciones'
-
-const DIAS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
 
 export function CalendarioEstudiante() {
   const hoy = inicioDia(new Date())
@@ -172,7 +177,7 @@ export function CalendarioEstudiante() {
           </div>
 
           <div className="grid grid-cols-7 border-b border-regla bg-lienzo">
-            {DIAS.map((dia) => (
+            {DIAS_REJILLA.map((dia) => (
               <div
                 key={dia}
                 className="border-r border-regla px-1 py-2 text-center text-[10.5px] font-semibold uppercase text-tinta-media last:border-r-0"
@@ -910,39 +915,9 @@ function ArchivoTarea({ tarea }: { tarea: TareaCalendario }) {
   )
 }
 
-function rangoCalendario(mes: Date) {
-  const primero = new Date(mes.getFullYear(), mes.getMonth(), 1)
-  const desplazamiento = (primero.getDay() + 6) % 7
-  const desde = new Date(primero)
-  desde.setDate(desde.getDate() - desplazamiento)
-  const dias = Array.from({ length: 42 }, (_, indice) => {
-    const fecha = new Date(desde)
-    fecha.setDate(fecha.getDate() + indice)
-    return fecha
-  })
-  const hasta = new Date(desde)
-  hasta.setDate(hasta.getDate() + 42)
-  return { desde, hasta, dias }
-}
 
-function inicioDia(fecha: Date): Date {
-  return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
-}
 
-function claveFecha(fecha: Date): string {
-  const ano = fecha.getFullYear()
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0')
-  const dia = String(fecha.getDate()).padStart(2, '0')
-  return `${ano}-${mes}-${dia}`
-}
 
-function formatoDiaCompleto(fecha: Date): string {
-  return new Intl.DateTimeFormat('es-DO', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(fecha)
-}
 
 function horaEntrega(iso: string): string {
   return new Intl.DateTimeFormat('es-DO', {

@@ -48,7 +48,7 @@ export function BarraIdentidad({
   }, [])
 
   return (
-    <header className="sticky top-0 z-30 bg-pizarra-fondo">
+    <header className="fondo-cabecera sticky top-0 z-30 shadow-[0_1px_0_rgba(255,255,255,0.08)_inset]">
       <div className="mx-auto flex h-13 max-w-[1500px] items-center gap-5 px-6">
         <Link to={inicio} className="rounded-xs">
           <Marca tono="claro" />
@@ -56,7 +56,10 @@ export function BarraIdentidad({
 
         <span className="h-5 w-px bg-white/20" aria-hidden="true" />
 
-        <span className="etiqueta-dato text-white/70" title={institucion?.nombre}>
+        <span
+          className="etiqueta-dato rounded-xs bg-white/12 px-2 py-1 text-white/85"
+          title={institucion?.nombre}
+        >
           {institucion?.siglas ?? institucion?.nombre ?? '—'}
         </span>
 
@@ -71,7 +74,7 @@ export function BarraIdentidad({
           <input
             type="search"
             placeholder={buscar}
-            className="h-8 w-full rounded-sm border border-white/15 bg-white/8 pl-9 pr-14 text-[13px] text-white placeholder:text-white/45 focus:border-pizarra-vivo focus:bg-white/12 focus:outline-none"
+            className="h-9 w-full rounded-sm border border-white/15 bg-white/10 pl-9 pr-14 text-[13px] text-white placeholder:text-white/45 hover:bg-white/[0.14] focus:border-pizarra-vivo focus:bg-white/[0.16] focus:outline-none"
           />
           <span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 font-dato text-[11px] text-white/40 lg:block">
             Ctrl K
@@ -84,7 +87,7 @@ export function BarraIdentidad({
             className="relative flex h-8 w-8 items-center justify-center rounded-sm text-white/75 hover:bg-white/10 hover:text-white"
           >
             <Bell size={17} strokeWidth={1.5} />
-            <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 bg-pizarra-vivo" />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rotulador-coral ring-2 ring-pizarra-fondo" />
           </button>
 
           <div ref={contenedor} className="relative">
@@ -93,7 +96,7 @@ export function BarraIdentidad({
               aria-expanded={menu}
               className="flex items-center gap-2 rounded-sm py-1 pl-1 pr-2 hover:bg-white/10"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-xs bg-pizarra-vivo font-dato text-[12px] font-semibold text-pizarra-fondo">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-pizarra-vivo to-[#0aa8c9] font-dato text-[12px] font-semibold text-pizarra-fondo shadow-[0_2px_8px_-2px_rgba(1,209,213,0.7)]">
                 {iniciales(usuario?.nombreCompleto ?? '')}
               </span>
               <span className="hidden text-left sm:block">
@@ -108,7 +111,7 @@ export function BarraIdentidad({
             </button>
 
             {menu && (
-              <div className="absolute right-0 top-full z-40 mt-1 w-64 rounded-md border border-regla bg-superficie py-1 shadow-[0_12px_28px_-12px_rgba(20,23,26,0.35)]">
+              <div className="absolute right-0 top-full z-40 mt-2 w-64 overflow-hidden rounded-md border border-regla bg-superficie py-1 shadow-flotante">
                 <div className="border-b border-regla px-3 py-2">
                   <p className="truncate text-[13px] font-medium text-tinta">
                     {usuario?.nombreCompleto}

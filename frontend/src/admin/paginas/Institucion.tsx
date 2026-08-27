@@ -5,7 +5,14 @@ import {
   type FormEvent,
   type SetStateAction,
 } from 'react'
-import { Check, Globe, Plus, RefreshCw, TriangleAlert } from 'lucide-react'
+import {
+  Building2,
+  Check,
+  Globe,
+  Plus,
+  RefreshCw,
+  TriangleAlert,
+} from 'lucide-react'
 import { Boton } from '../../ui/Boton'
 import { Campo } from '../../ui/Campo'
 import { Dialogo } from '../../ui/Dialogo'
@@ -99,6 +106,8 @@ export function Institucion() {
   return (
     <div className="space-y-6">
       <EncabezadoPagina
+        icono={Building2}
+        color="azul"
         titulo="Datos y marca"
         descripcion="Cómo se llama la institución, cómo se ve dentro de DR360TRAINING y quién puede entrar con su correo."
       />

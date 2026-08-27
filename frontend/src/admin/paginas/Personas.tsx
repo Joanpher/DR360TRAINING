@@ -60,6 +60,8 @@ export function Personas() {
 
   return (
     <Pantalla
+      icono={Users}
+      color="azul"
       titulo="Usuarios"
       descripcion="Personas vinculadas a la institución y el rol que cumplen aquí. Los estudiantes aparecen automáticamente cuando se inscriben en un curso."
       datos={datos}

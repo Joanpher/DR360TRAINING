@@ -28,7 +28,7 @@ export class BaseDatos implements OnModuleDestroy {
   constructor(config: ConfigService) {
     const crear = (url: string | undefined, nombre: string) => {
       if (!url) throw new Error(`falta ${nombre} en el entorno`);
-      return new Pool({
+      const pool = new Pool({
         connectionString: url,
         // RDS presenta un certificado de su propia CA. En produccion conviene
         // cargar el bundle de AWS y pasar a rejectUnauthorized: true.
@@ -48,7 +48,41 @@ export class BaseDatos implements OnModuleDestroy {
         // Sin esto, una peticion se queda colgada esperando a RDS hasta que
         // la funcion agota su tiempo y el error no dice de que murio.
         connectionTimeoutMillis: 10_000,
+        /*
+          RDS esta al otro lado de internet y por medio hay NAT, y a veces una
+          VPN. Cualquiera de los dos deja caer en silencio una conexion que
+          lleva un rato sin decir nada, y el pool no se entera hasta que
+          intenta usarla. El keepalive la mantiene viva y evita la mayoria de
+          esas caidas; el oyente de abajo se encarga de las que aun asi pasen.
+        */
+        keepAlive: true,
+        keepAliveInitialDelayMillis: 10_000,
       });
+
+      /*
+        Esta linea es la que impide que la API se caiga entera.
+
+        El pool emite 'error' cuando se muere una conexion que estaba
+        INACTIVA -RDS la cierra por tiempo, la VPN se corta, la maquina se
+        suspende-. No es un fallo de ninguna peticion: no hay nadie esperando
+        una respuesta, y por eso el error no llega a ningun try/catch.
+
+        En Node, un evento 'error' sin oyente no es un error que se ignora: es
+        una excepcion no capturada que **tumba el proceso**. Sin este oyente,
+        una sola conexion caida en mitad de la noche deja la API muerta y el
+        siguiente que intente entrar recibe un 500 sin ninguna relacion con lo
+        que hizo. Que es exactamente el sintoma que hubo que perseguir.
+
+        No hay nada que reparar aqui: pg ya descarto esa conexion y abrira otra
+        cuando alguien la pida. Solo hay que dejar constancia y seguir.
+      */
+      pool.on('error', (error: Error) => {
+        this.bitacora.warn(
+          `Conexion inactiva de ${nombre} caida (${error.message}). El pool abrira otra.`,
+        );
+      });
+
+      return pool;
     };
 
     this.negocio = crear(config.get('DATABASE_URL_APP'), 'DATABASE_URL_APP');

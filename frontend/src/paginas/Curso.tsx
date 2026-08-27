@@ -6,7 +6,6 @@ import {
   ChevronRight,
   ImagePlus,
   MapPin,
-  MessagesSquare,
   Clock3,
   UserRound,
   Users,
@@ -27,6 +26,7 @@ import { prepararPortadaCompleta } from '../datos/portada'
 import { AulaCurso } from '../portal/AulaCurso'
 import { ClasesCurso } from '../portal/ClasesCurso'
 import { AulaEstudiante } from '../portal/AulaEstudiante'
+import { ForoCurso } from '../portal/ForoCurso'
 import { CalificacionesCurso, TareasCurso } from '../portal/CursoModulos'
 import { EvaluacionesCurso } from '../portal/EvaluacionesCurso'
 import { Boton } from '../ui/Boton'
@@ -111,7 +111,7 @@ export function Curso() {
       {pestana === 'Exámenes' && <EvaluacionesCurso curso={curso} esDocente={rol === 'docente'} />}
       {pestana === 'Calificaciones' && <CalificacionesCurso curso={curso} esDocente={rol === 'docente'} />}
       {pestana === 'Clases' && <ClasesCurso curso={curso} />}
-      {pestana === 'Foro' && <ModuloVacio icono={MessagesSquare} titulo="No hay conversaciones" texto="Este curso todavía no tiene temas publicados." />}
+      {pestana === 'Foro' && <ForoCurso curso={curso} />}
       {pestana === 'Personas' && <Personas curso={curso} estudiantes={estudiantes} esDocente={rol === 'docente'} />}
     </div>
   )

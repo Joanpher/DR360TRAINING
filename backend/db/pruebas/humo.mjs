@@ -20,6 +20,7 @@
     · contadores tiene RLS       (la 0003 lo dejo sin politicas)
     · app.crear_alumno() existe  (un insert ... returning no pasa usuarios_lectura)
     · no se pueden borrar pagos  (las default privileges concedian el delete)
+    · el alumno ve su certificado pero no la caja que lo pago (0017)
 */
 import { readFileSync, existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -394,6 +395,97 @@ try {
     await app.query('rollback to savepoint borrar_reunion')
   }
   afirmar(!borraClase, 'ni las clases ni la asistencia se pueden borrar')
+
+  // --- El certificado, que es lo unico del POS que ve el alumnado ----------
+  //
+  // La 0014 dejo las seis tablas de caja y certificados abiertas solo a
+  // app.es_admin(). La 0017 abre una rendija: el estudiante ve el certificado de
+  // su propia inscripcion, y nada mas. Es exactamente el tipo de politica que
+  // puede quedarse a medias sin dar error -de mas, y le ensena la caja; de
+  // menos, y no ve su propio papel-, asi que se comprueban las dos caras.
+
+  const { rows: productoPos } = await app.query(
+    `insert into productos_pos (institucion_id, codigo, nombre, tipo, precio)
+     values ($1, 'CERTIFICADO', 'Certificado de finalizacion', 'certificado', 1500.00)
+     on conflict (institucion_id, tipo) do update set actualizado_en = now()
+     returning id`,
+    [institucionId])
+  const productoId = productoPos[0].id
+
+  const { rows: ventaPos } = await app.query(
+    `insert into ventas_pos
+       (institucion_id, numero, membresia_id, estado, subtotal, total, moneda, pagada_en)
+     values ($1, app.siguiente_numero($1, 'venta_pos'), $2, 'pagada', 1500.00, 1500.00, 'DOP', now())
+     returning id`,
+    [institucionId, membresiaId])
+  const ventaPosId = ventaPos[0].id
+
+  const { rows: lineaPos } = await app.query(
+    `insert into venta_pos_lineas
+       (institucion_id, venta_id, producto_id, inscripcion_id, descripcion,
+        precio_unitario, total)
+     values ($1, $2, $3, $4, 'Certificado · ING-101', 1500.00, 1500.00)
+     returning id`,
+    [institucionId, ventaPosId, productoId, inscripcionId])
+
+  const { rows: certificado } = await app.query(
+    `insert into certificados
+       (institucion_id, inscripcion_id, venta_linea_id, numero, codigo_verificacion, emitido_por)
+     values ($1, $2, $3, app.siguiente_numero($1, 'certificado'), 'HUMO0001', $4)
+     returning id`,
+    [institucionId, inscripcionId, lineaPos[0].id, usuarioId])
+  const certificadoId = certificado[0].id
+
+  // Y ahora mirando con los ojos del alumno.
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [alta[0].usuario_id])
+
+  const { rows: suyo } = await app.query(
+    `select numero::text as numero from certificados where id = $1`, [certificadoId])
+  afirmar(suyo.length === 1, 'el estudiante ve su propio certificado')
+
+  const { rows: caja } = await app.query(`select id from ventas_pos`)
+  afirmar(caja.length === 0, 'el estudiante no ve la venta que lo pago')
+
+  const { rows: catalogoPos } = await app.query(`select id from productos_pos`)
+  afirmar(catalogoPos.length === 0, 'el estudiante no ve el catalogo del POS')
+
+  const { rows: impresion } = await app.query(
+    `insert into certificado_entregas
+       (institucion_id, certificado_id, canal, realizado_por)
+     values ($1, $2, 'impresion', app.usuario_actual()) returning id`,
+    [institucionId, certificadoId])
+  afirmar(!!impresion[0]?.id, 'el estudiante deja constancia de su impresion')
+
+  // El canal esta fijado en la politica: por aqui no se fabrica un envio por
+  // correo que nadie hizo.
+  let correoFalso = false
+  try {
+    await app.query('savepoint entrega_falsa')
+    await app.query(
+      `insert into certificado_entregas
+         (institucion_id, certificado_id, canal, destinatario, realizado_por)
+       values ($1, $2, 'correo', 'quien@sea.test', app.usuario_actual())`,
+      [institucionId, certificadoId])
+    correoFalso = true
+    await app.query('release savepoint entrega_falsa')
+  } catch {
+    await app.query('rollback to savepoint entrega_falsa')
+  }
+  afirmar(!correoFalso, 'el estudiante no puede fingir un envio por correo')
+
+  let revoca = false
+  try {
+    await app.query('savepoint autorevocar')
+    const intento = await app.query(
+      `update certificados set estado = 'revocado' where id = $1`, [certificadoId])
+    revoca = intento.rowCount > 0
+    await app.query('release savepoint autorevocar')
+  } catch {
+    await app.query('rollback to savepoint autorevocar')
+  }
+  afirmar(!revoca, 'el estudiante no puede tocar su propio certificado')
+
+  await app.query(`select set_config('app.usuario_id', $1, true)`, [usuarioId])
 
   let descuentoAbusivo = false
   try {

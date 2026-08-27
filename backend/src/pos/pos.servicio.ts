@@ -220,142 +220,160 @@ export class PosServicio {
   }
 
   async crearVenta(sesion: Sesion, datos: CrearVentaDto, origen: Origen) {
-    return this.bd.conContexto(contextoDe(sesion), async (cliente) => {
-      const institucionId = institucionDe(sesion);
-      const { rows: inscripciones } = await cliente.query<{
-        membresiaId: string;
-        estudiante: string;
-        codigoCurso: string;
-        curso: string;
-        estado: string;
-        certificado: boolean;
-      }>(
-        `select i.membresia_id as "membresiaId", u.nombre_completo as estudiante,
-                c.codigo as "codigoCurso", c.nombre as curso, i.estado::text as estado,
-                c.certificado
-           from inscripciones i
-           join membresias m on m.id = i.membresia_id
-           join usuarios u on u.id = m.usuario_id
-           join cursos c on c.id = i.curso_id
-          where i.id = $1 for update of i`,
-        [datos.inscripcionId],
-      );
-      const inscripcion = inscripciones[0];
-      if (!inscripcion)
-        throw new NotFoundException('Esa inscripción no existe.');
-      if (!inscripcion.certificado)
-        throw new BadRequestException('Ese curso no entrega certificado.');
-      if (['retirada', 'cancelada'].includes(inscripcion.estado)) {
-        throw new BadRequestException(
-          'La inscripción está retirada o cancelada.',
-        );
-      }
+    return this.bd.conContexto(contextoDe(sesion), (cliente) =>
+      this.crearVentaEn(cliente, sesion, datos, origen),
+    );
+  }
 
-      const { rows: productos } = await cliente.query<{
-        id: string;
-        nombre: string;
-        tipo: string;
-        precio: string;
-        moneda: string;
-        activo: boolean;
-      }>(
-        `select id, nombre, tipo::text as tipo, precio::text as precio, moneda, activo
-           from productos_pos where id = $1 for update`,
-        [datos.productoId],
+  /*
+    El cuerpo de la venta, sobre un cliente que ya viene abierto. Se separo del
+    metodo publico cuando certificados empezo a cobrar y emitir de una sola
+    pulsacion: las dos cosas tienen que caber en la misma transaccion, o el
+    sistema puede quedarse con una venta pagada y sin documento. La otra salida
+    era repetir alli las comprobaciones -que el curso certifique, que no haya ya
+    otra venta viva, que el monto no pase del precio- y es justo la que envejece
+    mal: la regla cambiaria en un sitio y no en el otro.
+  */
+  async crearVentaEn(
+    cliente: PoolClient,
+    sesion: Sesion,
+    datos: CrearVentaDto,
+    origen: Origen,
+  ) {
+    const institucionId = institucionDe(sesion);
+    const { rows: inscripciones } = await cliente.query<{
+      membresiaId: string;
+      estudiante: string;
+      codigoCurso: string;
+      curso: string;
+      estado: string;
+      certificado: boolean;
+    }>(
+      `select i.membresia_id as "membresiaId", u.nombre_completo as estudiante,
+              c.codigo as "codigoCurso", c.nombre as curso, i.estado::text as estado,
+              c.certificado
+         from inscripciones i
+         join membresias m on m.id = i.membresia_id
+         join usuarios u on u.id = m.usuario_id
+         join cursos c on c.id = i.curso_id
+        where i.id = $1 for update of i`,
+      [datos.inscripcionId],
+    );
+    const inscripcion = inscripciones[0];
+    if (!inscripcion)
+      throw new NotFoundException('Esa inscripción no existe.');
+    if (!inscripcion.certificado)
+      throw new BadRequestException('Ese curso no entrega certificado.');
+    if (['retirada', 'cancelada'].includes(inscripcion.estado)) {
+      throw new BadRequestException(
+        'La inscripción está retirada o cancelada.',
       );
-      const producto = productos[0];
-      if (!producto || producto.tipo !== 'certificado' || !producto.activo) {
-        throw new BadRequestException(
-          'El producto de certificado no está disponible.',
-        );
-      }
+    }
 
-      const { rows: previa } = await cliente.query(
-        `(select v.id from venta_pos_lineas l
-          join ventas_pos v on v.id = l.venta_id
-          join productos_pos p on p.id = l.producto_id
-         where l.inscripcion_id = $1 and p.tipo = 'certificado' and v.estado <> 'anulada'
-         limit 1)
-         union all
-         (select cert.id from certificados cert where cert.inscripcion_id = $1 limit 1)
-         limit 1`,
-        [datos.inscripcionId],
+    const { rows: productos } = await cliente.query<{
+      id: string;
+      nombre: string;
+      tipo: string;
+      precio: string;
+      moneda: string;
+      activo: boolean;
+    }>(
+      `select id, nombre, tipo::text as tipo, precio::text as precio, moneda, activo
+         from productos_pos where id = $1 for update`,
+      [datos.productoId],
+    );
+    const producto = productos[0];
+    if (!producto || producto.tipo !== 'certificado' || !producto.activo) {
+      throw new BadRequestException(
+        'El producto de certificado no está disponible.',
       );
-      if (previa[0])
-        throw new BadRequestException(
-          'Ese certificado ya fue vendido o emitido.',
-        );
+    }
 
-      const precio = Number(producto.precio);
-      if (datos.montoRecibido > precio) {
-        throw new BadRequestException(
-          'El monto recibido supera el total de la venta.',
-        );
-      }
-      const { rows: consecutivo } = await cliente.query<{ valor: number }>(
-        `select app.siguiente_numero($1, 'venta_pos') as valor`,
-        [institucionId],
+    const { rows: previa } = await cliente.query(
+      `(select v.id from venta_pos_lineas l
+        join ventas_pos v on v.id = l.venta_id
+        join productos_pos p on p.id = l.producto_id
+       where l.inscripcion_id = $1 and p.tipo = 'certificado' and v.estado <> 'anulada'
+       limit 1)
+       union all
+       (select cert.id from certificados cert where cert.inscripcion_id = $1 limit 1)
+       limit 1`,
+      [datos.inscripcionId],
+    );
+    if (previa[0])
+      throw new BadRequestException(
+        'Ese certificado ya fue vendido o emitido.',
       );
-      const pagada = precio === 0 || datos.montoRecibido === precio;
-      const { rows: ventas } = await cliente.query<{ id: string }>(
-        `insert into ventas_pos
-           (institucion_id, numero, membresia_id, estado, subtotal, total, moneda,
-            nota, creada_por, pagada_en)
-         values ($1, $2, $3, $4::estado_venta_pos, $5, $5, $6, $7, $8,
-                 case when $4 = 'pagada' then now() end)
-         returning id`,
-        [
-          institucionId,
-          consecutivo[0].valor,
-          inscripcion.membresiaId,
-          pagada ? 'pagada' : 'pendiente',
-          producto.precio,
-          producto.moneda,
-          datos.nota ?? null,
-          sesion.usuarioId,
-        ],
+
+    const precio = Number(producto.precio);
+    if (datos.montoRecibido > precio) {
+      throw new BadRequestException(
+        'El monto recibido supera el total de la venta.',
       );
-      const ventaId = ventas[0].id;
-      await cliente.query(
-        `insert into venta_pos_lineas
-           (institucion_id, venta_id, producto_id, inscripcion_id, descripcion,
-            precio_unitario, total)
-         values ($1, $2, $3, $4, $5, $6, $6)`,
-        [
-          institucionId,
-          ventaId,
-          producto.id,
-          datos.inscripcionId,
-          `${producto.nombre} · ${inscripcion.codigoCurso} ${inscripcion.curso}`,
-          producto.precio,
-        ],
-      );
-      if (datos.montoRecibido > 0) {
-        await this.insertarPago(cliente, sesion, ventaId, {
-          monto: datos.montoRecibido,
-          metodo: datos.metodo,
-          referencia: datos.referencia,
-          nota: datos.nota,
-        });
-      }
-      await anotar(
-        cliente,
-        {
-          accion: pagada ? 'pos.venta_cobrada' : 'pos.venta_creada',
-          entidad: 'ventas_pos',
-          entidadId: ventaId,
-          datos: {
-            numero: consecutivo[0].valor,
-            estudiante: inscripcion.estudiante,
-            curso: inscripcion.curso,
-            total: producto.precio,
-            pagado: datos.montoRecibido,
-          },
+    }
+    const { rows: consecutivo } = await cliente.query<{ valor: number }>(
+      `select app.siguiente_numero($1, 'venta_pos') as valor`,
+      [institucionId],
+    );
+    const pagada = precio === 0 || datos.montoRecibido === precio;
+    const { rows: ventas } = await cliente.query<{ id: string }>(
+      `insert into ventas_pos
+         (institucion_id, numero, membresia_id, estado, subtotal, total, moneda,
+          nota, creada_por, pagada_en)
+       values ($1, $2, $3, $4::estado_venta_pos, $5, $5, $6, $7, $8,
+               case when $4 = 'pagada' then now() end)
+       returning id`,
+      [
+        institucionId,
+        consecutivo[0].valor,
+        inscripcion.membresiaId,
+        pagada ? 'pagada' : 'pendiente',
+        producto.precio,
+        producto.moneda,
+        datos.nota ?? null,
+        sesion.usuarioId,
+      ],
+    );
+    const ventaId = ventas[0].id;
+    await cliente.query(
+      `insert into venta_pos_lineas
+         (institucion_id, venta_id, producto_id, inscripcion_id, descripcion,
+          precio_unitario, total)
+       values ($1, $2, $3, $4, $5, $6, $6)`,
+      [
+        institucionId,
+        ventaId,
+        producto.id,
+        datos.inscripcionId,
+        `${producto.nombre} · ${inscripcion.codigoCurso} ${inscripcion.curso}`,
+        producto.precio,
+      ],
+    );
+    if (datos.montoRecibido > 0) {
+      await this.insertarPago(cliente, sesion, ventaId, {
+        monto: datos.montoRecibido,
+        metodo: datos.metodo,
+        referencia: datos.referencia,
+        nota: datos.nota,
+      });
+    }
+    await anotar(
+      cliente,
+      {
+        accion: pagada ? 'pos.venta_cobrada' : 'pos.venta_creada',
+        entidad: 'ventas_pos',
+        entidadId: ventaId,
+        datos: {
+          numero: consecutivo[0].valor,
+          estudiante: inscripcion.estudiante,
+          curso: inscripcion.curso,
+          total: producto.precio,
+          pagado: datos.montoRecibido,
         },
-        origen,
-      );
-      return { venta: await this.leerVenta(cliente, ventaId) };
-    });
+      },
+      origen,
+    );
+    return { venta: await this.leerVenta(cliente, ventaId) };
   }
 
   async agregarPago(

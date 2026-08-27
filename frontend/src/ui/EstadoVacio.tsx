@@ -1,22 +1,32 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { cn } from './cn'
+import { fondoRotulador, textoRotulador, type Rotulador } from './rotulador'
 
 /* Una pantalla vacia es una invitacion a actuar, no un mensaje de disculpa. */
 export function EstadoVacio({
   icono: Icono,
   titulo,
   texto,
+  color = 'azul',
   accion,
 }: {
   icono: LucideIcon
   titulo: string
   texto: string
+  color?: Rotulador
   accion?: ReactNode
 }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="mb-4 flex h-11 w-11 items-center justify-center border border-regla-fuerte bg-lienzo rounded-sm">
-        <Icono size={20} strokeWidth={1.5} className="text-tinta-suave" />
+      <div
+        className={cn(
+          'mb-4 flex h-14 w-14 items-center justify-center rounded-md',
+          fondoRotulador[color],
+          textoRotulador[color],
+        )}
+      >
+        <Icono size={24} strokeWidth={1.5} />
       </div>
       <h3 className="font-display text-[15px] font-semibold text-tinta">
         {titulo}

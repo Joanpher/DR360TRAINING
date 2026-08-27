@@ -38,6 +38,8 @@ export function Bitacora() {
   return (
     <div className="space-y-6">
       <EncabezadoPagina
+        icono={ScrollText}
+        color="violeta"
         titulo="Bitácora"
         descripcion="Todo cambio con consecuencias queda registrado: quién lo hizo, sobre qué y desde dónde. No se puede editar ni borrar."
         accion={
@@ -68,6 +70,7 @@ export function Bitacora() {
 
         {filtrados.length === 0 ? (
           <EstadoVacio
+            color="violeta"
             icono={ScrollText}
             titulo="Sin eventos que coincidan"
             texto="Prueba con otro término o quita el filtro de persona."

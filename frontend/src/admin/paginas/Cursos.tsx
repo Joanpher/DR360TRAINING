@@ -109,6 +109,8 @@ export function Cursos() {
 
   return (
     <Pantalla
+      icono={BookOpen}
+      color="violeta"
       titulo="Cursos"
       descripcion="El catálogo del centro. El estado de cada curso cambia automáticamente según sus fechas."
       datos={datos}

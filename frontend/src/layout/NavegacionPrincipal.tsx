@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
+  Award,
   BookOpen,
   Calendar,
   ChartColumn,
@@ -13,11 +14,19 @@ import {
 import { useRol, type Rol } from '../app/rol'
 import { usePortal } from '../portal/contexto'
 import { cn } from '../ui/cn'
+import {
+  fondoRotulador,
+  fondoRotuladorHover,
+  textoRotulador,
+  textoRotuladorHover,
+  type Rotulador,
+} from '../ui/rotulador'
 
 type Seccion = {
   etiqueta: string
   ruta: string
   icono: LucideIcon
+  color: Rotulador
   roles: Rol[]
   panel?: 'cursos'
 }
@@ -31,12 +40,13 @@ type Seccion = {
   panel al iniciar sesion. Por eso tiene su propio marco con barra lateral.
 */
 const secciones: Seccion[] = [
-  { etiqueta: 'Inicio', ruta: '/inicio', icono: House, roles: ['estudiante', 'docente'] },
-  { etiqueta: 'Cursos', ruta: '/cursos', icono: BookOpen, roles: ['estudiante', 'docente'], panel: 'cursos' },
-  { etiqueta: 'Calendario', ruta: '/calendario', icono: Calendar, roles: ['estudiante', 'docente'] },
-  { etiqueta: 'Clases', ruta: '/clases', icono: Video, roles: ['estudiante', 'docente'] },
-  { etiqueta: 'Mensajes', ruta: '/mensajes', icono: MessageSquare, roles: ['estudiante', 'docente'] },
-  { etiqueta: 'Reportes', ruta: '/reportes', icono: ChartColumn, roles: ['docente'] },
+  { etiqueta: 'Inicio', ruta: '/inicio', icono: House, color: 'azul', roles: ['estudiante', 'docente'] },
+  { etiqueta: 'Cursos', ruta: '/cursos', icono: BookOpen, color: 'violeta', roles: ['estudiante', 'docente'], panel: 'cursos' },
+  { etiqueta: 'Calendario', ruta: '/calendario', icono: Calendar, color: 'cian', roles: ['estudiante', 'docente'] },
+  { etiqueta: 'Clases', ruta: '/clases', icono: Video, color: 'coral', roles: ['estudiante', 'docente'] },
+  { etiqueta: 'Mensajes', ruta: '/mensajes', icono: MessageSquare, color: 'magenta', roles: ['estudiante', 'docente'] },
+  { etiqueta: 'Mis certificados', ruta: '/certificados', icono: Award, color: 'ambar', roles: ['estudiante'] },
+  { etiqueta: 'Reportes', ruta: '/reportes', icono: ChartColumn, color: 'menta', roles: ['docente'] },
 ]
 
 export function NavegacionPrincipal() {
@@ -101,7 +111,7 @@ export function NavegacionPrincipal() {
   return (
     <nav
       ref={contenedor}
-      className="sticky top-13 z-20 border-b border-regla bg-superficie"
+      className="sticky top-13 z-20 border-b border-regla bg-superficie/95 shadow-[0_1px_0_rgba(11,24,51,0.03)] backdrop-blur"
     >
       <div className="mx-auto flex max-w-[1500px] items-stretch gap-0.5 overflow-x-auto px-3 sm:px-6">
         {visibles.map((seccion) => {
@@ -112,11 +122,25 @@ export function NavegacionPrincipal() {
             : seccion.etiqueta
 
           const clases = cn(
-            'relative flex items-center gap-2 px-3 py-3 text-[13.5px] font-medium transition-colors',
-            'after:absolute after:inset-x-2 after:-bottom-px after:h-[2px] after:transition-colors',
+            'group relative flex items-center gap-2 px-2.5 py-2.5 text-[13.5px] font-medium transition-colors',
+            'after:absolute after:inset-x-2 after:-bottom-px after:h-[3px] after:rounded-t-full after:transition-colors',
             activa
-              ? 'text-tinta after:bg-pizarra'
+              ? 'font-semibold text-tinta after:bg-pizarra'
               : 'text-tinta-media after:bg-transparent hover:text-tinta hover:after:bg-regla-fuerte',
+          )
+
+          /* La pastilla de color solo se enciende en la seccion abierta o
+             cuando el raton pasa: seis pastillas encendidas a la vez serian
+             seis cosas pidiendo atencion y ninguna la conseguiria. */
+          const pastilla = cn(
+            'flex h-7 w-7 items-center justify-center rounded-xs transition-all duration-200',
+            activa
+              ? cn(fondoRotulador[seccion.color], textoRotulador[seccion.color])
+              : cn(
+                  'bg-transparent text-tinta-suave group-hover:scale-105',
+                  fondoRotuladorHover[seccion.color],
+                  textoRotuladorHover[seccion.color],
+                ),
           )
 
           if (seccion.panel) {
@@ -131,7 +155,9 @@ export function NavegacionPrincipal() {
                   aria-expanded={esteAbierto}
                   className={clases}
                 >
-                  <Icono size={16} strokeWidth={1.5} />
+                  <span className={pastilla}>
+                    <Icono size={15} strokeWidth={1.75} />
+                  </span>
                   {etiqueta}
                   <ChevronDown
                     size={13}
@@ -149,7 +175,9 @@ export function NavegacionPrincipal() {
 
           return (
             <NavLink key={seccion.ruta} to={seccion.ruta} className={clases}>
-              <Icono size={16} strokeWidth={1.5} />
+              <span className={pastilla}>
+                <Icono size={15} strokeWidth={1.75} />
+              </span>
               {etiqueta}
               {seccion.ruta === '/clases' && enVivo.length > 0 && (
                 <span

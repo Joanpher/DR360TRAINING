@@ -15,6 +15,9 @@ import { EvaluacionesModule } from './evaluaciones/evaluaciones.module';
 import { PosModule } from './pos/pos.module';
 import { CertificadosModule } from './certificados/certificados.module';
 import { ReunionesModule } from './reuniones/reuniones.module';
+import { ForoModule } from './foro/foro.module';
+import { DocenciaModule } from './docencia/docencia.module';
+import { PerfilModule } from './perfil/perfil.module';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { ReunionesModule } from './reuniones/reuniones.module';
     PosModule,
     CertificadosModule,
     ReunionesModule,
+    ForoModule,
+    DocenciaModule,
+    PerfilModule,
   ],
   controllers: [AppControlador],
   providers: [

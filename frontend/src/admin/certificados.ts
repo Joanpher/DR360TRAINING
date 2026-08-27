@@ -1,4 +1,13 @@
+/*
+  En que punto esta una inscripcion respecto de su certificado. Lo calcula la
+  base -ver DISPONIBILIDAD en certificados.servicio.ts- y no el navegador, para
+  que las tres pantallas que lo pintan digan lo mismo.
+
+  'sin_vender' solo aparece en la lista de clase: la lista general parte de las
+  ventas, asi que alli no existe una fila sin venta.
+*/
 export type DisponibilidadCertificado =
+  | 'sin_vender'
   | 'listo'
   | 'emitido'
   | 'revocado'
@@ -56,3 +65,64 @@ export type DetalleCertificado = {
   ultimaEntregaEn: string | null
 }
 
+
+/* --- Buscar por curso ---------------------------------------------------- */
+
+export type CursoCertificado = {
+  id: string
+  codigo: string
+  nombre: string
+  estado: string
+  certificado: boolean
+  modalidad: string
+  iniciaEn: string | null
+  terminaEn: string | null
+  duracionHoras: string | null
+  sede: string | null
+  instructor: string | null
+  inscritos: number
+  completados: number
+  vendidos: number
+  pendientesPago: number
+  emitidos: number
+}
+
+export type EstudianteDeCurso = {
+  inscripcionId: string
+  estadoInscripcion: string
+  calificacion: string | null
+  completadoEn: string | null
+  matricula: string | null
+  estudiante: string
+  correo: string | null
+  telefono: string | null
+  ventaId: string | null
+  numeroVenta: string | null
+  estadoVenta: 'pendiente' | 'pagada' | 'anulada' | null
+  totalVenta: string | null
+  moneda: string | null
+  pagadoVenta: string
+  saldoVenta: string
+  certificadoId: string | null
+  numeroCertificado: string | null
+  estadoCertificado: 'emitido' | 'revocado' | null
+  emitidoEn: string | null
+  disponibilidad: DisponibilidadCertificado
+}
+
+export type ListaDeClase = {
+  curso: {
+    id: string
+    codigo: string
+    nombre: string
+    estado: string
+    certificado: boolean
+    modalidad: string
+    iniciaEn: string | null
+    terminaEn: string | null
+    duracionHoras: string | null
+    sede: string | null
+    instructor: string | null
+  }
+  estudiantes: EstudianteDeCurso[]
+}

@@ -24,7 +24,7 @@ export function Buscador({
         value={valor}
         onChange={(e) => alCambiar(e.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-sm border border-regla-fuerte bg-superficie pl-9 pr-3 text-[13px] text-tinta placeholder:text-tinta-suave focus:border-pizarra focus:outline-none focus:ring-2 focus:ring-pizarra/15"
+        className="h-10 w-full rounded-sm border border-regla-fuerte bg-superficie pl-9 pr-3 text-[13px] text-tinta shadow-[0_1px_2px_rgba(11,24,51,0.04)_inset] placeholder:text-tinta-suave hover:border-tinta-suave focus:border-pizarra focus:outline-none focus:ring-[3px] focus:ring-pizarra/18"
       />
     </div>
   )

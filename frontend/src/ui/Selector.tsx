@@ -32,7 +32,8 @@ export function Selector({
           id={id}
           className={cn(
             'h-11 w-full appearance-none rounded-sm border bg-superficie pl-3 pr-9 text-sm text-tinta',
-            'focus:border-pizarra focus:outline-none focus:ring-2 focus:ring-pizarra/15',
+            'hover:border-tinta-suave',
+            'focus:border-pizarra focus:outline-none focus:ring-[3px] focus:ring-pizarra/18',
             error ? 'border-correccion' : 'border-regla-fuerte',
             className,
           )}

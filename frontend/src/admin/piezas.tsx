@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { Etiqueta } from '../ui/Etiqueta'
 import { cn } from '../ui/cn'
+import {
+  fondoRotulador,
+  textoRotulador,
+  type Rotulador,
+} from '../ui/rotulador'
 import { nombreRolInstitucional } from '../app/rol'
 import type { EstadoCurso } from './catalogo'
 import type { EstadoCargo, EstadoInscripcion } from './inscripciones'
@@ -19,23 +24,40 @@ import type { EstadoMembresia, RolInstitucional } from './personas'
 export function EncabezadoPagina({
   titulo,
   descripcion,
+  icono: Icono,
+  color = 'azul',
   accion,
 }: {
   titulo: string
   descripcion?: string
+  icono?: LucideIcon
+  color?: Rotulador
   accion?: ReactNode
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-tinta">
-          {titulo}
-        </h1>
-        {descripcion && (
-          <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-tinta-media">
-            {descripcion}
-          </p>
+      <div className="flex min-w-0 items-start gap-3.5">
+        {Icono && (
+          <span
+            className={cn(
+              'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-md',
+              fondoRotulador[color],
+              textoRotulador[color],
+            )}
+          >
+            <Icono size={22} strokeWidth={1.75} />
+          </span>
         )}
+        <div className="min-w-0">
+          <h1 className="font-display text-[26px] font-bold leading-tight tracking-[-0.02em] text-tinta">
+            {titulo}
+          </h1>
+          {descripcion && (
+            <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-tinta-media">
+              {descripcion}
+            </p>
+          )}
+        </div>
       </div>
       {accion}
     </header>
@@ -85,20 +107,45 @@ export function FiltroSelect({
   Cuatro tarjetas con sombra compiten entre si; cuatro columnas separadas por
   una regla de 1px se leen de un vistazo como lo que son, una misma medida
   partida en cuatro.
+
+  Cada columna puede llevar icono y color. Es lo unico que se anadio: la cifra
+  sigue siendo lo mas grande de la fila, y el icono va pequeno y a la derecha
+  para no competir con ella.
 */
-export function Cifras({
-  datos,
-}: {
-  datos: Array<{ etiqueta: string; valor: string; pie: string; alerta?: boolean }>
-}) {
+export type Cifra = {
+  etiqueta: string
+  valor: string
+  pie: string
+  alerta?: boolean
+  icono?: LucideIcon
+  color?: Rotulador
+}
+
+export function Cifras({ datos }: { datos: Cifra[] }) {
   return (
     <dl className="grid grid-cols-2 divide-regla md:grid-cols-4 md:divide-x">
       {datos.map((dato, i) => (
         <div
           key={dato.etiqueta}
-          className={cn('px-5 py-4', i < 2 && 'border-b border-regla md:border-b-0')}
+          className={cn(
+            'group px-5 py-4 transition-colors hover:bg-[#fafcff]',
+            i < 2 && 'border-b border-regla md:border-b-0',
+          )}
         >
-          <dt className="etiqueta-dato text-tinta-suave">{dato.etiqueta}</dt>
+          <div className="flex items-start justify-between gap-2">
+            <dt className="etiqueta-dato text-tinta-suave">{dato.etiqueta}</dt>
+            {dato.icono && (
+              <span
+                className={cn(
+                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-xs transition-transform duration-200 group-hover:scale-110',
+                  fondoRotulador[dato.color ?? 'azul'],
+                  textoRotulador[dato.color ?? 'azul'],
+                )}
+              >
+                <dato.icono size={15} strokeWidth={1.75} />
+              </span>
+            )}
+          </div>
           <dd
             className={cn(
               'mt-2 font-dato text-[28px] font-medium leading-none tabular-nums',
@@ -315,9 +362,9 @@ export function PieDeTabla({
 /* --- Aviso en línea ---------------------------------------------------- */
 
 const tonosNota = {
-  error: 'border-correccion/30 bg-correccion-tenue text-correccion',
-  exito: 'border-pizarra/25 bg-pizarra-tenue text-pizarra',
-  aviso: 'border-aviso/25 bg-aviso-tenue text-tinta',
+  error: 'border-rotulador-coral-borde bg-correccion-tenue text-correccion',
+  exito: 'border-rotulador-menta-borde bg-rotulador-menta-tenue text-rotulador-menta',
+  aviso: 'border-rotulador-ambar-borde bg-aviso-tenue text-aviso',
 } as const
 
 /*
@@ -335,7 +382,7 @@ export function Nota({
     <p
       role={tono === 'error' ? 'alert' : 'status'}
       className={cn(
-        'rounded-sm border px-3 py-2 text-[13px] leading-relaxed',
+        'rounded-sm border px-3 py-2 text-[13px] font-medium leading-relaxed',
         tonosNota[tono],
       )}
     >

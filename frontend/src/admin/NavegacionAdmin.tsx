@@ -14,6 +14,11 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '../ui/cn'
+import {
+  fondoRotulador,
+  textoRotulador,
+  type Rotulador,
+} from '../ui/rotulador'
 import { useSesion } from '../app/sesion'
 import { useConsulta } from '../datos/consulta'
 import type { Curso } from './catalogo'
@@ -30,42 +35,60 @@ import type { Curso } from './catalogo'
   final la configuracion que casi nunca se toca.
 */
 
-type Entrada = { etiqueta: string; ruta: string; icono: LucideIcon; fin?: boolean }
+type Entrada = {
+  etiqueta: string
+  ruta: string
+  icono: LucideIcon
+  color: Rotulador
+  fin?: boolean
+}
 type Grupo = { titulo: string; entradas: Entrada[] }
 
+/*
+  Cada entrada lleva su color y no lo hereda del grupo: el color es de la
+  pantalla, no de la seccion, y asi Certificados se reconoce por su ambar este
+  donde este -en la barra lateral, en su encabezado y en sus botones-.
+*/
 const grupos: Grupo[] = [
   {
     titulo: 'Panel',
-    entradas: [{ etiqueta: 'Resumen', ruta: '/admin', icono: LayoutGrid, fin: true }],
+    entradas: [
+      { etiqueta: 'Resumen', ruta: '/admin', icono: LayoutGrid, color: 'azul', fin: true },
+    ],
   },
   {
     titulo: 'Catálogo',
     entradas: [
-      { etiqueta: 'Cursos', ruta: '/admin/cursos', icono: BookOpen },
-      { etiqueta: 'Categorías', ruta: '/admin/categorias', icono: Tags },
+      { etiqueta: 'Cursos', ruta: '/admin/cursos', icono: BookOpen, color: 'violeta' },
+      { etiqueta: 'Categorías', ruta: '/admin/categorias', icono: Tags, color: 'cian' },
     ],
   },
   {
     titulo: 'Alumnado',
     entradas: [
-      { etiqueta: 'Inscripciones', ruta: '/admin/inscripciones', icono: UserRoundCheck },
-      { etiqueta: 'Usuarios', ruta: '/admin/personas', icono: Users },
-      { etiqueta: 'Invitaciones', ruta: '/admin/invitaciones', icono: Send },
+      {
+        etiqueta: 'Inscripciones',
+        ruta: '/admin/inscripciones',
+        icono: UserRoundCheck,
+        color: 'menta',
+      },
+      { etiqueta: 'Usuarios', ruta: '/admin/personas', icono: Users, color: 'azul' },
+      { etiqueta: 'Invitaciones', ruta: '/admin/invitaciones', icono: Send, color: 'magenta' },
     ],
   },
   {
     titulo: 'Operaciones',
     entradas: [
-      { etiqueta: 'POS', ruta: '/admin/pos', icono: ShoppingCart },
-      { etiqueta: 'Certificados', ruta: '/admin/certificados', icono: Award },
+      { etiqueta: 'Caja / POS', ruta: '/admin/pos', icono: ShoppingCart, color: 'menta' },
+      { etiqueta: 'Certificados', ruta: '/admin/certificados', icono: Award, color: 'ambar' },
     ],
   },
   {
     titulo: 'Institución',
     entradas: [
-      { etiqueta: 'Datos y marca', ruta: '/admin/institucion', icono: Building2 },
-      { etiqueta: 'Sedes', ruta: '/admin/sedes', icono: MapPin },
-      { etiqueta: 'Bitácora', ruta: '/admin/bitacora', icono: ScrollText },
+      { etiqueta: 'Datos y marca', ruta: '/admin/institucion', icono: Building2, color: 'azul' },
+      { etiqueta: 'Sedes', ruta: '/admin/sedes', icono: MapPin, color: 'coral' },
+      { etiqueta: 'Bitácora', ruta: '/admin/bitacora', icono: ScrollText, color: 'violeta' },
     ],
   },
 ]
@@ -91,7 +114,7 @@ export function NavegacionAdmin() {
         */}
         <div className="border-b border-regla px-4 py-4">
           <div className="flex items-start gap-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xs bg-pizarra font-dato text-[12px] font-semibold text-white">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-linear-to-br from-pizarra to-pizarra-fondo font-dato text-[12px] font-semibold text-white shadow-[0_4px_10px_-4px_rgba(0,85,252,0.7)]">
               {(institucion?.siglas ?? institucion?.nombre ?? '—').slice(0, 3)}
             </span>
             <div className="min-w-0">
@@ -126,15 +149,28 @@ export function NavegacionAdmin() {
                         end={entrada.fin}
                         className={({ isActive }) =>
                           cn(
-                            'relative flex items-center gap-2.5 rounded-sm px-2 py-[7px] text-[13.5px] transition-colors',
-                            'before:absolute before:inset-y-1 before:-left-3 before:w-[2px] before:transition-colors',
+                            'group relative flex items-center gap-2.5 rounded-sm py-[5px] pl-1.5 pr-2 text-[13.5px] transition-colors',
+                            'before:absolute before:inset-y-1.5 before:-left-3 before:w-[3px] before:rounded-r-full before:transition-colors',
                             isActive
-                              ? 'bg-pizarra-tenue font-medium text-pizarra before:bg-pizarra'
+                              ? 'bg-pizarra-tenue font-semibold text-tinta before:bg-pizarra'
                               : 'text-tinta-media before:bg-transparent hover:bg-lienzo hover:text-tinta',
                           )
                         }
                       >
-                        <Icono size={16} strokeWidth={1.5} className="shrink-0" />
+                        {/*
+                          El icono va dentro de una pastilla de su color: en una
+                          lista de trece entradas es lo primero que se busca, y
+                          trece iconos grises del mismo tono no se distinguen.
+                        */}
+                        <span
+                          className={cn(
+                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-xs transition-transform duration-200 group-hover:scale-105',
+                            fondoRotulador[entrada.color],
+                            textoRotulador[entrada.color],
+                          )}
+                        >
+                          <Icono size={15} strokeWidth={1.75} />
+                        </span>
                         {entrada.etiqueta}
                       </NavLink>
                     </li>

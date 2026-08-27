@@ -1,18 +1,13 @@
-import { CalendarDays } from 'lucide-react'
 import { useRol } from '../app/rol'
+import { CalendarioDocente } from '../portal/CalendarioDocente'
 import { CalendarioEstudiante } from '../portal/CalendarioEstudiante'
-import { Pendiente } from './Pendiente'
 
+/*
+  Dos calendarios sobre los mismos dias. El del estudiante contesta "que tengo
+  que entregar" y el de quien imparte "que tengo que preparar y corregir": las
+  mismas fechas, leidas desde los dos lados de la clase.
+*/
 export function Calendario() {
   const { rol } = useRol()
-
-  if (rol === 'estudiante') return <CalendarioEstudiante />
-
-  return (
-    <Pendiente
-      titulo="Calendario"
-      icono={CalendarDays}
-      texto="Reúne clases, fechas límite y eventos de la institución. No guarda datos propios: proyecta los de cursos, tareas y sesiones."
-    />
-  )
+  return rol === 'estudiante' ? <CalendarioEstudiante /> : <CalendarioDocente />
 }

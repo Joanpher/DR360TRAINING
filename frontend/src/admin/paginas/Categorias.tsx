@@ -39,6 +39,8 @@ export function Categorias() {
 
   return (
     <Pantalla
+      icono={Tags}
+      color="cian"
       titulo="Categorías"
       descripcion="Cómo se agrupa el catálogo para que se pueda filtrar. Un curso pertenece a una sola categoría, y puede no tener ninguna."
       datos={datos}

@@ -62,11 +62,11 @@ export function Dialogo({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'dialogo-panel w-full rounded-md border border-regla bg-superficie shadow-[0_24px_60px_-20px_rgba(20,23,26,0.45)]',
+          'dialogo-panel w-full overflow-hidden rounded-lg border border-regla bg-superficie shadow-flotante',
           anchos[ancho],
         )}
       >
-        <header className="flex items-start justify-between gap-6 border-b border-regla px-5 py-4">
+        <header className="flex items-start justify-between gap-6 border-b border-regla bg-linear-to-b from-[#f7fbff] to-superficie px-5 py-4">
           <div>
             <h2 className="font-display text-[17px] font-bold tracking-[-0.015em] text-tinta">
               {titulo}

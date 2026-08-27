@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { ChartColumn, MessageSquare, UserRound } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 import { Shell } from '../layout/Shell'
 import { Acceso } from '../paginas/Acceso'
 import { Landing } from '../paginas/Landing'
@@ -18,6 +18,10 @@ import { Cursos } from '../paginas/Cursos'
 import { Curso } from '../paginas/Curso'
 import { Calendario } from '../paginas/Calendario'
 import { Clases } from '../paginas/Clases'
+import { Reportes } from '../paginas/Reportes'
+import { MisCertificados } from '../paginas/MisCertificados'
+import { ImprimirMiCertificado } from '../paginas/ImprimirMiCertificado'
+import { Perfil } from '../paginas/Perfil'
 import { Sala } from '../paginas/Sala'
 import { Pendiente } from '../paginas/Pendiente'
 import { LayoutAdmin } from '../admin/LayoutAdmin'
@@ -172,16 +176,7 @@ function RutasAdmin() {
         <Route path="/admin/bitacora" element={<Bitacora />} />
         <Route path="/admin/pos" element={<Pos />} />
         <Route path="/admin/certificados" element={<Certificados />} />
-        <Route
-          path="/perfil"
-          element={
-            <Pendiente
-              titulo="Mi perfil"
-              icono={UserRound}
-              texto="Tus datos de cuenta, contraseña y sesiones abiertas. Es lo único de esta plataforma que no pertenece a una institución sino a ti."
-            />
-          }
-        />
+        <Route path="/perfil" element={<Perfil />} />
       </Route>
 
       <Route path="/admin/certificados/:id/imprimir" element={<ImprimirCertificado />} />
@@ -213,33 +208,19 @@ function RutasAprendizaje() {
             />
           }
         />
-        <Route
-          path="/reportes"
-          element={
-            <Pendiente
-              titulo="Reportes"
-              icono={ChartColumn}
-              texto="Rendimiento, asistencia, entregas y uso de la plataforma. Lee de vistas propias, nunca de las tablas transaccionales."
-            />
-          }
-        />
-        <Route
-          path="/perfil"
-          element={
-            <Pendiente
-              titulo="Mi perfil"
-              icono={UserRound}
-              texto="Tus datos de cuenta, contraseña y sesiones abiertas. Es lo único de esta plataforma que no pertenece a una institución sino a ti."
-            />
-          }
-        />
+        <Route path="/reportes" element={<Reportes />} />
+        <Route path="/certificados" element={<MisCertificados />} />
+        <Route path="/perfil" element={<Perfil />} />
       </Route>
 
       {/*
         Fuera del Shell a proposito: una videollamada con la barra de navegacion
-        del sitio alrededor es una videollamada que nadie mira.
+        del sitio alrededor es una videollamada que nadie mira. El certificado
+        esta aqui por lo mismo: se va a imprimir, y la barra estorba en pantalla
+        sin aportar nada en papel.
       */}
       <Route path="/clases/:id" element={<Sala />} />
+      <Route path="/certificados/:id" element={<ImprimirMiCertificado />} />
 
       <Route path="*" element={<Navigate to="/inicio" replace />} />
     </Routes>

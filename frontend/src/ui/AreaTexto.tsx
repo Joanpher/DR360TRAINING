@@ -19,8 +19,8 @@ export function AreaTexto({ etiqueta, ayuda, error, className, ...resto }: Props
         rows={3}
         className={cn(
           'w-full resize-y rounded-sm border bg-superficie px-3 py-2.5 text-sm leading-relaxed text-tinta',
-          'placeholder:text-tinta-suave',
-          'focus:border-pizarra focus:outline-none focus:ring-2 focus:ring-pizarra/15',
+          'placeholder:text-tinta-suave hover:border-tinta-suave',
+          'focus:border-pizarra focus:outline-none focus:ring-[3px] focus:ring-pizarra/18',
           error ? 'border-correccion' : 'border-regla-fuerte',
           className,
         )}

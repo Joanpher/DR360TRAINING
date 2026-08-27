@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { Boton } from '../ui/Boton'
+import type { Rotulador } from '../ui/rotulador'
 import { EncabezadoPagina, Esqueleto, Nota } from './piezas'
 
 /*
@@ -16,6 +18,8 @@ import { EncabezadoPagina, Esqueleto, Nota } from './piezas'
 export function Pantalla<T>({
   titulo,
   descripcion,
+  icono,
+  color,
   accion,
   datos,
   cargando,
@@ -25,6 +29,8 @@ export function Pantalla<T>({
 }: {
   titulo: string
   descripcion?: string
+  icono?: LucideIcon
+  color?: Rotulador
   accion?: ReactNode
   datos: T | null
   cargando: boolean
@@ -35,7 +41,12 @@ export function Pantalla<T>({
   if (cargando && !datos) {
     return (
       <div className="space-y-6">
-        <EncabezadoPagina titulo={titulo} descripcion={descripcion} />
+        <EncabezadoPagina
+          titulo={titulo}
+          descripcion={descripcion}
+          icono={icono}
+          color={color}
+        />
         <Esqueleto filas={4} />
       </div>
     )
@@ -44,7 +55,12 @@ export function Pantalla<T>({
   if (error && !datos) {
     return (
       <div className="space-y-6">
-        <EncabezadoPagina titulo={titulo} descripcion={descripcion} />
+        <EncabezadoPagina
+          titulo={titulo}
+          descripcion={descripcion}
+          icono={icono}
+          color={color}
+        />
         <Nota tono="error">{error}</Nota>
         <Boton variante="secundario" onClick={recargar}>
           Reintentar
@@ -57,7 +73,13 @@ export function Pantalla<T>({
 
   return (
     <div className="space-y-6">
-      <EncabezadoPagina titulo={titulo} descripcion={descripcion} accion={accion} />
+      <EncabezadoPagina
+        titulo={titulo}
+        descripcion={descripcion}
+        icono={icono}
+        color={color}
+        accion={accion}
+      />
       {children(datos)}
     </div>
   )

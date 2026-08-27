@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  Award,
   BookOpen,
   CalendarClock,
   CheckCircle2,
@@ -16,6 +17,9 @@ import { TarjetaCursoEstudiante } from './TarjetaCursoEstudiante'
 import { Boton } from '../ui/Boton'
 import { EstadoVacio } from '../ui/EstadoVacio'
 import { Ficha, FichaCabecera } from '../ui/Ficha'
+import { Azulejo, RejillaAzulejos } from '../ui/Azulejo'
+import { cn } from '../ui/cn'
+import { fondoRotulador, textoRotulador, type Rotulador } from '../ui/rotulador'
 
 export function InicioEstudiante() {
   const { usuario, institucion } = useSesion()
@@ -28,7 +32,7 @@ export function InicioEstudiante() {
 
   return (
     <div className="space-y-8">
-      <section className="overflow-hidden rounded-md border border-pizarra-fondo bg-pizarra-fondo text-white">
+      <section className="fondo-cabecera overflow-hidden rounded-lg border border-pizarra-fondo text-white shadow-realce">
         <div className="grid min-h-[250px] lg:grid-cols-[1fr_38%]">
           <div className="flex flex-col justify-between p-6 sm:p-8">
             <div>
@@ -80,14 +84,26 @@ export function InicioEstudiante() {
         </div>
       </section>
 
-      <dl className="grid border-y border-regla bg-superficie sm:grid-cols-3 sm:divide-x sm:divide-regla">
-        <Resumen icono={<BookOpen size={18} />} etiqueta="En curso" valor={cargando ? '—' : activos} />
-        <Resumen icono={<CalendarClock size={18} />} etiqueta="Próximamente" valor={cargando ? '—' : enPromocion} />
-        <Resumen icono={<CheckCircle2 size={18} />} etiqueta="Completados" valor={cargando ? '—' : completados} />
+      {/*
+        Cuatro atajos y no doce: el estudiante entra a hacer una de cuatro cosas
+        -clase, curso, calendario, certificado-, y una rejilla mas larga solo
+        haria mas lenta la eleccion.
+      */}
+      <RejillaAzulejos>
+        <Azulejo icono={BookOpen} color="violeta" titulo="Mis cursos" pie="Material y tareas" ruta="/cursos" />
+        <Azulejo icono={CalendarClock} color="cian" titulo="Calendario" pie="Tu horario completo" ruta="/calendario" />
+        <Azulejo icono={MessageSquare} color="magenta" titulo="Mensajes" pie="Foros y avisos" ruta="/mensajes" />
+        <Azulejo icono={Award} color="ambar" titulo="Mis certificados" pie="Ver e imprimir" ruta="/certificados" />
+      </RejillaAzulejos>
+
+      <dl className="grid overflow-hidden rounded-md border border-regla bg-superficie shadow-apoyo sm:grid-cols-3 sm:divide-x sm:divide-regla">
+        <Resumen icono={<BookOpen size={18} />} color="violeta" etiqueta="En curso" valor={cargando ? '—' : activos} />
+        <Resumen icono={<CalendarClock size={18} />} color="cian" etiqueta="Próximamente" valor={cargando ? '—' : enPromocion} />
+        <Resumen icono={<CheckCircle2 size={18} />} color="menta" etiqueta="Completados" valor={cargando ? '—' : completados} />
       </dl>
 
       {error ? (
-        <Ficha><EstadoVacio icono={BookOpen} titulo="No se pudieron cargar tus cursos" texto={error} accion={<Boton tamano="sm" onClick={() => void recargar()}>Reintentar</Boton>} /></Ficha>
+        <Ficha><EstadoVacio icono={BookOpen} color="coral" titulo="No se pudieron cargar tus cursos" texto={error} accion={<Boton tamano="sm" onClick={() => void recargar()}>Reintentar</Boton>} /></Ficha>
       ) : cargando ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((item) => <div key={item} className="h-96 animate-pulse rounded-md bg-superficie" />)}</div>
       ) : (
@@ -98,7 +114,7 @@ export function InicioEstudiante() {
               <Link to="/cursos" className="flex items-center gap-1.5 text-[13px] font-medium text-pizarra hover:underline underline-offset-4">Ver todos <ArrowRight size={14} /></Link>
             </div>
             {cursos.length === 0 ? (
-              <Ficha><EstadoVacio icono={BookOpen} titulo="Todavía no tienes cursos" texto="Tus cursos aparecerán aquí después de la inscripción." /></Ficha>
+              <Ficha><EstadoVacio icono={BookOpen} color="violeta" titulo="Todavía no tienes cursos" texto="Tus cursos aparecerán aquí después de la inscripción." /></Ficha>
             ) : (
               <div className="grid gap-5 md:grid-cols-2">{cursos.slice(0, 4).map((curso) => <TarjetaCursoEstudiante key={curso.id} curso={curso} />)}</div>
             )}
@@ -109,29 +125,55 @@ export function InicioEstudiante() {
       )}
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Ficha><FichaCabecera titulo="Anuncios" /><EstadoVacio icono={Megaphone} titulo="No hay anuncios" texto="La institución todavía no ha publicado anuncios." /></Ficha>
-        <Ficha><FichaCabecera titulo="Mensajes" /><EstadoVacio icono={MessageSquare} titulo="No hay mensajes nuevos" texto="Tus conversaciones aparecerán aquí." /></Ficha>
+        <Ficha><FichaCabecera titulo="Anuncios" icono={Megaphone} color="ambar" /><EstadoVacio icono={Megaphone} color="ambar" titulo="No hay anuncios" texto="La institución todavía no ha publicado anuncios." /></Ficha>
+        <Ficha><FichaCabecera titulo="Mensajes" icono={MessageSquare} color="magenta" /><EstadoVacio icono={MessageSquare} color="magenta" titulo="No hay mensajes nuevos" texto="Tus conversaciones aparecerán aquí." /></Ficha>
       </div>
     </div>
   )
 }
 
-function Resumen({ icono, etiqueta, valor }: { icono: React.ReactNode; etiqueta: string; valor: number | string }) {
-  return <div className="flex items-center gap-4 px-5 py-4"><span className="flex h-10 w-10 items-center justify-center rounded-sm bg-pizarra-tenue text-pizarra">{icono}</span><div><dt className="etiqueta-dato text-tinta-suave">{etiqueta}</dt><dd className="mt-1 font-dato text-[24px] font-medium leading-none text-tinta">{valor}</dd></div></div>
+function Resumen({
+  icono,
+  color,
+  etiqueta,
+  valor,
+}: {
+  icono: React.ReactNode
+  color: Rotulador
+  etiqueta: string
+  valor: number | string
+}) {
+  return (
+    <div className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#fafcff]">
+      <span
+        className={cn(
+          'flex h-11 w-11 items-center justify-center rounded-sm transition-transform duration-200 group-hover:scale-105',
+          fondoRotulador[color],
+          textoRotulador[color],
+        )}
+      >
+        {icono}
+      </span>
+      <div>
+        <dt className="etiqueta-dato text-tinta-suave">{etiqueta}</dt>
+        <dd className="mt-1 font-dato text-[24px] font-medium leading-none text-tinta">{valor}</dd>
+      </div>
+    </div>
+  )
 }
 
 function Agenda({ clases }: { clases: ReturnType<typeof proximasClases> }) {
   return (
     <aside className="min-w-0">
       <div className="mb-4"><p className="etiqueta-dato text-pizarra">Agenda</p><h2 className="mt-1 font-display text-[22px] font-bold text-tinta">Próximas clases</h2></div>
-      <div className="overflow-hidden rounded-md border border-regla bg-superficie">
+      <div className="overflow-hidden rounded-md border border-regla bg-superficie shadow-apoyo">
         {clases.length === 0 ? (
-          <EstadoVacio icono={CalendarClock} titulo="Agenda despejada" texto="No hay clases próximas programadas." />
+          <EstadoVacio icono={CalendarClock} color="cian" titulo="Agenda despejada" texto="No hay clases próximas programadas." />
         ) : (
           <ul>
             {clases.slice(0, 5).map((clase, indice) => (
               <li key={clase.clave} className="grid grid-cols-[54px_1fr] gap-3 border-b border-regla px-4 py-3.5 last:border-b-0">
-                <div className={indice === 0 ? 'text-pizarra' : 'text-tinta-suave'}><p className="font-dato text-[18px] font-semibold leading-none">{clase.inicio.getDate().toString().padStart(2, '0')}</p><p className="mt-1 text-[10.5px] font-semibold uppercase">{new Intl.DateTimeFormat('es-DO', { month: 'short' }).format(clase.inicio)}</p></div>
+                <div className={cn('flex flex-col items-center justify-center rounded-sm py-1', indice === 0 ? 'bg-pizarra-tenue text-pizarra' : 'text-tinta-suave')}><p className="font-dato text-[18px] font-semibold leading-none">{clase.inicio.getDate().toString().padStart(2, '0')}</p><p className="mt-1 text-[10.5px] font-semibold uppercase">{new Intl.DateTimeFormat('es-DO', { month: 'short' }).format(clase.inicio)}</p></div>
                 <div className="min-w-0"><p className="truncate text-[13px] font-semibold text-tinta">{clase.curso.nombre}</p><p className="mt-1 font-dato text-[11px] text-tinta-media">{horaClase(clase.inicio)} – {horaClase(clase.fin)}</p><p className="mt-0.5 truncate text-[11.5px] text-tinta-suave">{clase.curso.codigo}</p></div>
               </li>
             ))}

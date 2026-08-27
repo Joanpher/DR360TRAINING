@@ -45,6 +45,8 @@ export function Invitaciones() {
   return (
     <div className="space-y-6">
       <EncabezadoPagina
+        icono={Send}
+        color="magenta"
         titulo="Invitaciones"
         descripcion="Nadie entra a una institución sin aceptar una invitación. Hasta que la acepta, la persona no tiene membresía y no ve un solo dato de la institución."
         accion={

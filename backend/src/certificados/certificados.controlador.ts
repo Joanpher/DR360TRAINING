@@ -12,6 +12,8 @@ import { DeDonde, type Origen } from '../comun/auditoria';
 import { Actual, Roles, type Sesion } from '../comun/sesion';
 import { CertificadosServicio } from './certificados.servicio';
 import {
+  BuscarCursosCertificadoDto,
+  CobrarCertificadoDto,
   EmitirCertificadoDto,
   EnviarCertificadoDto,
   ListarCertificadosDto,
@@ -26,6 +28,33 @@ export class CertificadosControlador {
   @Get() listar(@Actual() s: Sesion, @Query() f: ListarCertificadosDto) {
     return this.certificados.listar(s, f);
   }
+
+  /*
+    Estas dos van antes que @Get(':id') a proposito: Nest prueba las rutas en
+    el orden en que estan escritas, y 'cursos' encajaria en ':id', que exige un
+    uuid. El sintoma seria un 400 raro al abrir el buscador.
+  */
+  @Get('cursos') cursos(
+    @Actual() s: Sesion,
+    @Query() f: BuscarCursosCertificadoDto,
+  ) {
+    return this.certificados.cursos(s, f);
+  }
+  @Get('cursos/:cursoId') listaDeClase(
+    @Actual() s: Sesion,
+    @Param('cursoId', ParseUUIDPipe) cursoId: string,
+  ) {
+    return this.certificados.listaDeClase(s, cursoId);
+  }
+
+  @Post('cobrar') cobrar(
+    @Actual() s: Sesion,
+    @Body() d: CobrarCertificadoDto,
+    @DeDonde() o: Origen,
+  ) {
+    return this.certificados.cobrar(s, d, o);
+  }
+
   @Get(':id') detalle(
     @Actual() s: Sesion,
     @Param('id', ParseUUIDPipe) id: string,

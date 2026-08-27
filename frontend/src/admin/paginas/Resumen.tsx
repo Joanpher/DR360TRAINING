@@ -1,12 +1,24 @@
 import { Link } from 'react-router-dom'
 import {
   ArrowRight,
+  Award,
   BookOpen,
   Check,
   CircleAlert,
+  LayoutGrid,
+  ListChecks,
+  MapPin,
+  Rocket,
   Send,
+  ShoppingCart,
+  Tags,
+  TriangleAlert,
   UserPlus,
+  UserRoundCheck,
+  Users,
+  Wallet,
 } from 'lucide-react'
+import { Azulejo, RejillaAzulejos } from '../../ui/Azulejo'
 import { Ficha, FichaCabecera } from '../../ui/Ficha'
 import { cn } from '../../ui/cn'
 import { useSesion } from '../../app/sesion'
@@ -115,6 +127,8 @@ export function Resumen() {
   return (
     <div className="space-y-6">
       <EncabezadoPagina
+        icono={LayoutGrid}
+        color="azul"
         titulo={`Buen día, ${usuario?.nombres?.split(' ')[0] ?? ''}`}
         descripcion={`Estás administrando ${institucion?.nombre ?? 'tu institución'}. ${
           disponibles.length > 0
@@ -123,14 +137,35 @@ export function Resumen() {
         }`}
       />
 
+      {/*
+        Los atajos van arriba del todo y no escondidos en la barra lateral. Son
+        las ocho cosas que se hacen a diario -cobrar, inscribir, imprimir- y
+        tenerlas a un clic desde la primera pantalla es la diferencia entre un
+        panel que se usa y un menu que se recorre.
+      */}
+      <RejillaAzulejos>
+        <Azulejo icono={ShoppingCart} color="menta" titulo="Cobrar en caja" pie="Vender un certificado" ruta="/admin/pos" />
+        <Azulejo icono={Award} color="ambar" titulo="Certificados" pie="Buscar curso e imprimir" ruta="/admin/certificados" />
+        <Azulejo icono={UserPlus} color="azul" titulo="Inscribir" pie="Matrícula y clave" ruta="/admin/inscripciones" />
+        <Azulejo icono={BookOpen} color="violeta" titulo="Cursos" pie="Catálogo del centro" ruta="/admin/cursos" />
+        <Azulejo icono={Users} color="cian" titulo="Usuarios" pie="Personas y roles" ruta="/admin/personas" />
+        <Azulejo icono={Wallet} color="coral" titulo="Cobros pendientes" pie={`${conDeuda} con saldo`} ruta="/admin/inscripciones" />
+        <Azulejo icono={Tags} color="magenta" titulo="Categorías" pie="Organizar el catálogo" ruta="/admin/categorias" />
+        <Azulejo icono={MapPin} color="azul" titulo="Sedes" pie="Dónde se imparte" ruta="/admin/sedes" />
+      </RejillaAzulejos>
+
       <Ficha>
         <FichaCabecera
           titulo="Hay que atender"
+          icono={TriangleAlert}
+          color="coral"
           descripcion="Lo que impide que el centro funcione del todo"
         />
         {atender.length === 0 ? (
-          <p className="flex items-center gap-2 px-5 py-4 text-[13.5px] text-tinta-media">
-            <Check size={16} strokeWidth={1.75} className="text-pizarra" />
+          <p className="flex items-center gap-2.5 px-5 py-4 text-[13.5px] text-tinta-media">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xs bg-rotulador-menta-tenue text-rotulador-menta">
+              <Check size={15} strokeWidth={2.25} />
+            </span>
             Nada pendiente. Los cursos están programados y las cuentas al día.
           </p>
         ) : (
@@ -169,22 +204,30 @@ export function Resumen() {
               etiqueta: 'Cursos disponibles',
               valor: String(disponibles.length),
               pie: `${cursos.length} en el catálogo`,
+              icono: BookOpen,
+              color: 'violeta',
             },
             {
               etiqueta: 'Inscripciones',
               valor: String(ultimas?.total ?? 0),
               pie: 'Desde que abrió el centro',
+              icono: UserRoundCheck,
+              color: 'azul',
             },
             {
               etiqueta: 'Con saldo pendiente',
               valor: String(conDeuda),
               pie: 'Cargos sin cobrar del todo',
               alerta: conDeuda > 0,
+              icono: Wallet,
+              color: 'coral',
             },
             {
               etiqueta: 'Personas',
               valor: String(personas.filter((p) => p.estado === 'activa').length),
               pie: 'Membresías activas',
+              icono: Users,
+              color: 'cian',
             },
           ]}
         />
@@ -193,6 +236,8 @@ export function Resumen() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Ficha>
           <FichaCabecera
+            icono={UserRoundCheck}
+            color="azul"
             titulo="Últimas inscripciones"
             accion={
               <Link
@@ -247,7 +292,20 @@ export function Resumen() {
         </Ficha>
 
         <Ficha>
-          <FichaCabecera titulo="Puesta en marcha" descripcion={`${avance}% completado`} />
+          <FichaCabecera
+            titulo="Puesta en marcha"
+            icono={Rocket}
+            color="menta"
+            descripcion={`${avance}% completado`}
+          />
+          {/* La barra dice de un vistazo lo que la lista dice leyendo seis
+              lineas. Va aqui y no en la cabecera para no apretarla. */}
+          <div className="h-1.5 w-full bg-regla">
+            <div
+              className="h-full bg-linear-to-r from-rotulador-menta to-pizarra-vivo transition-[width] duration-500"
+              style={{ width: `${avance}%` }}
+            />
+          </div>
           <ul>
             {puestaEnMarcha.map((paso) => (
               <li
@@ -256,9 +314,9 @@ export function Resumen() {
               >
                 <span
                   className={cn(
-                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',
                     paso.hecho
-                      ? 'border-pizarra bg-pizarra text-white'
+                      ? 'border-rotulador-menta bg-rotulador-menta text-white'
                       : 'border-regla-fuerte bg-superficie',
                   )}
                 >
@@ -282,6 +340,8 @@ export function Resumen() {
       <Ficha>
         <FichaCabecera
           titulo="El flujo, de principio a fin"
+          icono={ListChecks}
+          color="cian"
           descripcion="Las tres pantallas que sostienen el sistema"
         />
         <ol className="grid gap-px bg-regla sm:grid-cols-3">
